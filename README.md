@@ -17,7 +17,7 @@ Login ─┬─ failed → back to the home page
               ├─ Projects
               ├─ New Project → Product 360° (photos / video / 3D)  ┐
               │              → Showroom (panoramas + hotspots)     ┴→ Preview → Publish → Share link · QR code · Shopify embed
-              ├─ Product Library
+              ├─ Product Library (Products · Photos)
               ├─ Assets
               ├─ Preview & Publish
               └─ Team (admins) / My Workspace (staff)
@@ -41,6 +41,17 @@ Login ─┬─ failed → back to the home page
 - **Product 360°:** upload 24–72 turntable photos, or a video of one full turn (frames are extracted automatically). Optional 3D model: Blender → glTF Binary (.glb), plus .usdz for iPhone AR.
 - **Showroom:** upload 2:1 panoramas from a 360° camera, or capture one with a normal phone at `/capture/` (it stitches on the phone and can save straight to the Asset Library). Then click on the panorama to place hotspots: links to other scenes, products, or info.
 - **Preview** shows the saved draft; **Publish** makes it public. Share via link, QR code, or the Shopify embed code (paste into a *Custom liquid* section).
+
+## Photo library (private)
+
+**Product Library → Photos** stores original product photos in a separate **private** repository, `jackstudio-photos`, so only the team can see them and they don't count towards the website's 1 GB.
+
+- **First time:** the account owner opens Product Library → Photos and presses **Set up photo library**. This creates the private repository and invites the current team.
+- **Upload:** choose photos and give each one its SKU. **Use SKU from file names** reads names like `JS1023-BRN_front.jpg` → `JS1023-BRN`. Originals are stored unchanged (up to 50 MB each).
+- **Find:** search by SKU, product name (if the product in the library has that SKU), file name or tag.
+- **Download:** open a photo for the original, or tick several (or **Download all** for a SKU) to get a zip.
+- **Access:** members get a second GitHub invitation for the photo library and must accept it. If someone can't see photos, an admin presses **Give everyone photo access** in Team.
+- **Size:** GitHub recommends keeping a repository under about 5 GB; the Photos page shows current usage.
 
 ## Files
 

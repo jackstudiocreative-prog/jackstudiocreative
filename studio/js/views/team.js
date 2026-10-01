@@ -1,6 +1,6 @@
 // Team — account management (admins only)
-import { listTeam, inviteMember, removeMember, cancelInvite } from '../github.js';
-import { REPO } from '../config.js';
+import { listTeam, inviteMember, removeMember, cancelInvite, syncPhotoAccess } from '../github.js';
+import { REPO, PHOTOS_REPO } from '../config.js';
 import { esc, toast, busy, timeAgo } from '../ui.js';
 
 const ROLE = { admin: 'Admin', staff: 'Staff', viewer: 'View only' };
@@ -42,7 +42,12 @@ export async function render(el, { user }) {
             <select class="select" id="role"><option value="staff">Staff</option><option value="admin">Admin</option></select></div>
           <button class="btn" type="submit" id="send">Send invitation</button>
         </form>
-        <p class="status" style="margin-top:16px">Access is managed through the GitHub repository <b>${esc(REPO.owner)}/${esc(REPO.repo)}</b>.</p>
+        <p class="status" style="margin-top:16px">Access is managed through the GitHub repositories <b>${esc(REPO.owner)}/${esc(REPO.repo)}</b> (website) and <b>${esc(PHOTOS_REPO)}</b> (private photos). New members get an invitation email for each — they need to accept both.</p>
+      </section>
+      <section class="panel">
+        <h2>Photo library access</h2>
+        <p class="sub">If someone can't open <b>Product Library → Photos</b>, this re-sends their photo library invitation with the same role they have here.</p>
+        <button class="btn btn--ghost btn--sm" type="button" id="sync">Give everyone photo access</button>
       </section>
     </div>`;
 
@@ -61,6 +66,11 @@ export async function render(el, { user }) {
       } catch (err) { toast(err.status === 404 ? `No GitHub user called "${login}"` : err.message, true); }
     });
   });
+
+  $('#sync').addEventListener('click', (e) => busy(e.currentTarget, 'Updating…', async () => {
+    try { await syncPhotoAccess(); toast('Photo library access updated'); }
+    catch (err) { toast(err.status === 404 ? 'The photo library is not set up yet (Product Library → Photos).' : err.message, true); }
+  }));
 
   el.querySelectorAll('[data-role]').forEach((s) => s.addEventListener('change', async () => {
     try { await inviteMember(s.dataset.role, s.value); toast(`${s.dataset.role} is now ${ROLE[s.value]}`); }

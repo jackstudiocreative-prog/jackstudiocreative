@@ -20,22 +20,29 @@ export async function render(el, { param, go, saved }) {
   return param ? renderEditor(el, { lib, usedBy, param, go, saved }) : renderList(el, { lib, usedBy });
 }
 
+/** Page title + Products | Photos tabs, shared by both tabs */
+export function libraryTabs(active, actions = '') {
+  return `
+    <div class="page-head"><h1>Product Library</h1><div class="actions">${actions}</div></div>
+    <nav class="tabs" aria-label="Product Library">
+      <a href="#/library" ${active === 'products' ? 'aria-current="page"' : ''}>Products</a>
+      <a href="#/photos" ${active === 'photos' ? 'aria-current="page"' : ''}>Photos</a>
+    </nav>`;
+}
+
 function renderList(el, { lib, usedBy }) {
   el.innerHTML = `
-    <div class="page-head">
-      <h1>Product Library</h1>
-      <div class="actions"><a class="btn" href="#/library/new">+ Add product</a></div>
-    </div>
-    <input class="input filter-one" id="q" type="search" placeholder="Search products" aria-label="Search products">
+    ${libraryTabs('products', '<a class="btn" href="#/library/new">+ Add product</a>')}
+    <input class="input filter-one" id="q" type="search" placeholder="Search by name, SKU or series" aria-label="Search products">
     <div id="list"></div>`;
   const draw = () => {
     const q = el.querySelector('#q').value.trim().toLowerCase();
-    const list = lib.products.filter((x) => !q || x.name.toLowerCase().includes(q) || (x.series || '').toLowerCase().includes(q));
+    const list = lib.products.filter((x) => !q || `${x.name} ${x.series || ''} ${x.sku || ''}`.toLowerCase().includes(q));
     el.querySelector('#list').innerHTML = list.length ? `<ul class="grid" style="list-style:none;margin:0;padding:0">${list.map((x) => {
       const n = usedBy(x.id).length;
       return `<li><a class="item" href="#/library/${encodeURIComponent(x.id)}">
         ${x.image ? `<img src="${esc(mediaURL(x.image))}" alt="" loading="lazy">` : '<div class="ph">No image</div>'}
-        <div class="body"><h3>${esc(x.name)}</h3><div class="meta"><span>${esc(x.series || '—')}</span>${x.price ? `<span>${esc(x.price)}</span>` : ''}</div>
+        <div class="body"><h3>${esc(x.name)}</h3><div class="meta">${x.sku ? `<span class="sku">${esc(x.sku)}</span>` : ''}<span>${esc(x.series || '—')}</span>${x.price ? `<span>${esc(x.price)}</span>` : ''}</div>
         <div class="meta"><span>${n ? `Used in ${n} project${n > 1 ? 's' : ''}` : 'Not used yet'}</span></div></div>
       </a></li>`;
     }).join('')}</ul>` : `<div class="empty">${lib.products.length ? 'No products match.' : 'No products yet. <a href="#/library/new">Add the first one</a>.'}</div>`;
@@ -49,7 +56,7 @@ function renderEditor(el, { lib, usedBy, param, go, saved }) {
   const isNew = param === 'new';
   const original = isNew ? null : lib.products.find((x) => x.id === param);
   if (!isNew && !original) throw new Error('This product is not in the library.');
-  const x = structuredClone(original || { id: '', name: '', series: '', price: '', description: '', image: '' });
+  const x = structuredClone(original || { id: '', name: '', sku: '', series: '', price: '', description: '', image: '' });
   let image = null, dirty = false;
   const uses = isNew ? [] : usedBy(x.id);
 
@@ -63,7 +70,11 @@ function renderEditor(el, { lib, usedBy, param, go, saved }) {
     </div>
     <div class="editor">
       <section class="panel">
-        <div class="field"><label for="name">Product name *</label><input class="input" id="name" value="${esc(x.name)}" maxlength="100"></div>
+        <div class="row">
+          <div class="field"><label for="name">Product name *</label><input class="input" id="name" value="${esc(x.name)}" maxlength="100"></div>
+          <div class="field"><label for="sku">SKU</label><input class="input" id="sku" value="${esc(x.sku || '')}" maxlength="40" placeholder="e.g. JS1023-BRN">
+            ${x.sku ? `<span class="hint"><a href="#/photos/${encodeURIComponent(x.sku)}">See photos for this SKU →</a></span>` : ''}</div>
+        </div>
         <div class="row">
           <div class="field"><label for="series">Series</label><input class="input" id="series" list="series-list" value="${esc(x.series)}">
             <datalist id="series-list">${SERIES.map((s) => `<option value="${esc(s)}">`).join('')}</datalist></div>
@@ -81,7 +92,7 @@ function renderEditor(el, { lib, usedBy, param, go, saved }) {
     </div>`;
 
   const $ = (s) => el.querySelector(s);
-  ['#name', '#series', '#price', '#desc'].forEach((s) => $(s).addEventListener('input', () => { dirty = true; }));
+  ['#name', '#sku', '#series', '#price', '#desc'].forEach((s) => $(s).addEventListener('input', () => { dirty = true; }));
   $('#file').addEventListener('change', async (e) => {
     const f = e.target.files[0];
     if (!f) return;
@@ -93,6 +104,7 @@ function renderEditor(el, { lib, usedBy, param, go, saved }) {
   $('#save').addEventListener('click', () => busy($('#save'), 'Saving…', async () => {
     x.name = $('#name').value.trim();
     if (!x.name) { toast('Enter the product name', true); return; }
+    x.sku = $('#sku').value.trim().toUpperCase().replace(/\s+/g, '-');
     x.series = $('#series').value.trim();
     x.price = $('#price').value.trim();
     x.description = $('#desc').value.trim();

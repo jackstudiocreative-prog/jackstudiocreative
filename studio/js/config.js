@@ -6,6 +6,9 @@ export const REPO = {
   branch: 'main',
 };
 
+// Private repository for the product photo library (originals). Only team members can see it.
+export const PHOTOS_REPO = 'jackstudio-photos';
+
 // Base URL of the public site, worked out from where the Studio is opened
 // (…/studio/ → …/). Works on github.io and on a custom domain alike.
 export const SITE_BASE = new URL('../', new URL('.', location.href)).href.replace(/\/$/, '');

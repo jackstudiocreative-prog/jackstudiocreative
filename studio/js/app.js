@@ -7,6 +7,7 @@ import * as projects from './views/projects.js';
 import * as newProject from './views/new-project.js';
 import * as editor from './views/editor.js';
 import * as library from './views/library.js';
+import * as photoLibrary from './views/photos.js';
 import * as assets from './views/assets.js';
 import * as publish from './views/publish.js';
 import * as team from './views/team.js';
@@ -14,7 +15,7 @@ import * as team from './views/team.js';
 const $ = (id) => document.getElementById(id);
 const ROUTES = {
   '': ['home', home], projects: ['projects', projects], new: ['new', newProject], project: ['projects', editor],
-  library: ['library', library], assets: ['assets', assets], publish: ['publish', publish], team: ['team', team],
+  library: ['library', library], photos: ['library', photoLibrary], assets: ['assets', assets], publish: ['publish', publish], team: ['team', team],
 };
 
 let user = null;
