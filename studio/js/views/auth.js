@@ -46,6 +46,10 @@ export function render(el, { mode = 'login', message = '', onSignedIn }) {
     const key = $('#key').value.trim();
     $('#login-error').textContent = '';
     if (!key) { $('#login-error').textContent = 'Paste your GitHub access key.'; return; }
+    if (!/^(ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{60,})$/.test(key)) {
+      $('#login-error').textContent = `That doesn't look like a complete GitHub key (${key.length} characters). A key starts with "ghp_" and is 40 characters long — copy it with the copy icon on GitHub and paste it here.`;
+      return;
+    }
     const btn = $('#submit');
     btn.disabled = true;
     btn.textContent = 'Signing in…';
