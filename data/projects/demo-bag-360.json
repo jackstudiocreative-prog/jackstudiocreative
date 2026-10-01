@@ -1,0 +1,31 @@
+{
+  "id": "demo-bag-360",
+  "type": "product",
+  "title": "Demo Leather Bag 360°",
+  "createdBy": "jackstudiocreative-prog",
+  "createdAt": "2026-10-01T08:46:02.393Z",
+  "updatedBy": "jackstudiocreative-prog",
+  "updatedAt": "2026-10-01T08:46:02.393Z",
+  "publishedBy": "jackstudiocreative-prog",
+  "publishedAt": "2026-10-01T08:46:02.393Z",
+  "draft": {
+    "productId": "demo-bag",
+    "spin": {
+      "folder": "media/products/demo-bag",
+      "pattern": "frame-{n}.jpg",
+      "count": 36,
+      "pad": 2
+    },
+    "model": null
+  },
+  "published": {
+    "productId": "demo-bag",
+    "spin": {
+      "folder": "media/products/demo-bag",
+      "pattern": "frame-{n}.jpg",
+      "count": 36,
+      "pad": 2
+    },
+    "model": null
+  }
+}

@@ -1,6 +1,7 @@
 // Phone 360° capture: guided shooting with the gyro, then on-device stitching.
 import { rotationFromEuler, mat, forward, yawPitch, dirFromYawPitch } from './stitch.js';
 import { buildTargets } from './targets.js';
+import { hasToken, commit } from '../studio/js/github.js';
 
 const DEG = Math.PI / 180;
 const $ = (id) => document.getElementById(id);
@@ -52,14 +53,14 @@ async function start() {
   const err = $('intro-error');
   err.hidden = true;
   try {
-    if (!window.isSecureContext) throw new Error('请用 https 网址打开这个页面（相机和陀螺仪只能在安全连接下使用）。');
-    if (!navigator.mediaDevices?.getUserMedia) throw new Error('这个浏览器不能使用相机，请用 Safari 或 Chrome。');
-    if (!document.createElement('canvas').getContext('webgl2')) throw new Error('这台手机不支持拼接所需的 WebGL2，请更新浏览器。');
+    if (!window.isSecureContext) throw new Error('Open this page with an https:// address — the camera and motion sensors only work on secure connections.');
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error('This browser cannot use the camera. Please use Safari or Chrome.');
+    if (!document.createElement('canvas').getContext('webgl2')) throw new Error('This phone does not support WebGL2, which stitching needs. Please update your browser.');
 
     // iOS asks for motion permission; it must happen inside this tap
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
       const res = await DeviceOrientationEvent.requestPermission();
-      if (res !== 'granted') throw new Error('需要允许「动作与方向」权限才能拍 360°。');
+      if (res !== 'granted') throw new Error('Please allow Motion & Orientation access to capture in 360°.');
     }
     window.addEventListener('deviceorientation', onOrientation);
 
@@ -70,8 +71,8 @@ async function start() {
     const video = $('video');
     video.srcObject = st.stream;
     await video.play();
-    await waitFor(() => video.videoWidth > 0, 4000, '相机没有画面，请重新打开页面。');
-    await waitFor(() => st.R, 3000, '读不到陀螺仪。请确认手机有陀螺仪，并允许「动作与方向」权限。');
+    await waitFor(() => video.videoWidth > 0, 4000, 'The camera shows no picture. Please reload the page.');
+    await waitFor(() => st.R, 3000, 'Cannot read the motion sensor. Make sure Motion & Orientation access is allowed.');
 
     st.wakeLock = await navigator.wakeLock?.request('screen').catch(() => null);
     st.shots = [];
@@ -83,7 +84,7 @@ async function start() {
     loop();
   } catch (e) {
     stopCamera();
-    err.textContent = e.name === 'NotAllowedError' ? '需要允许相机权限才能拍 360°。' : e.message;
+    err.textContent = e.name === 'NotAllowedError' ? 'Please allow camera access to capture in 360°.' : e.message;
     err.hidden = false;
   }
 }
@@ -162,11 +163,11 @@ function draw() {
   const [, pitch] = yawPitch(forward(st.R));
   const roll = Math.asin(Math.max(-1, Math.min(1, st.R[6]))) / DEG; // camera x-axis tilt
   if (Math.abs(pitch / DEG) < 70 && Math.abs(roll) > 25) {
-    hint.textContent = '请竖着拿手机';
+    hint.textContent = 'Hold the phone upright';
     hint.classList.add('is-warn');
     return;
   }
-  if (!next) { hint.textContent = '全部拍好了'; return; }
+  if (!next) { hint.textContent = 'All done'; return; }
   const c = mat.apply(Rt, targetDir(next));
   const sx = (fs * c[0]) / Math.max(1e-3, -c[2]), sy = -(fs * c[1]) / Math.max(1e-3, -c[2]);
   const onScreen = c[2] < 0 && Math.abs(sx) < W / 2 - 20 && Math.abs(sy) < H / 2 - 20;
@@ -175,13 +176,13 @@ function draw() {
     const len = Math.hypot(dx, dy) || 1;
     dx /= len; dy /= len;
     drawArrow(ctx, W / 2 + dx * 70, H / 2 + dy * 70, Math.atan2(dy, dx));
-    hint.textContent = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? '向右转' : '向左转') : (dy > 0 ? '向下转' : '向上转');
+    hint.textContent = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'Turn right' : 'Turn left') : (dy > 0 ? 'Tilt down' : 'Tilt up');
   } else if (angle(forward(st.R), targetDir(next)) < ALIGN_DEG) {
-    hint.textContent = '保持不动…';
+    hint.textContent = 'Hold still…';
   } else if (angle(forward(st.R), targetDir(next)) < ALIGN_DEG * 3) {
-    hint.textContent = '再对准一点';
+    hint.textContent = 'A little closer';
   } else {
-    hint.textContent = '把中间的圆圈对准圆点';
+    hint.textContent = 'Line up the circle with the dot';
   }
 }
 
@@ -242,27 +243,27 @@ $('shutter').addEventListener('click', () => {
   const f = forward(st.R);
   const near = targets.filter((x) => !done(x)).sort((a, b) => angle(f, targetDir(a)) - angle(f, targetDir(b)))[0];
   if (near && angle(f, targetDir(near)) < 15) shoot(near);
-  else { $('hint').textContent = '请对准圆点附近再拍'; }
+  else { $('hint').textContent = 'Move closer to a dot first'; }
 });
 $('undo').addEventListener('click', () => { st.shots.pop(); updateCount(); });
 $('cancel').addEventListener('click', () => {
-  if (st.shots.length && !confirm('确定放弃这次拍摄？')) return;
+  if (st.shots.length && !confirm('Discard this capture?')) return;
   stopCamera();
   show('intro');
 });
 $('finish').addEventListener('click', () => {
   const missing = targets.length - st.shots.length;
-  if (missing > 0 && !confirm(`还有 ${missing} 个位置没拍，没拍到的地方会自动补上模糊背景。要现在完成吗？`)) return;
+  if (missing > 0 && !confirm(`${missing} spots are not captured yet. They will be filled with a soft blur. Finish now?`)) return;
   finish();
 });
 $('start').addEventListener('click', start);
 
 /* ---------------- Stitch ---------------- */
 
-const STAGES = { prepare: ['准备照片…', 0, 0.05], align: ['对齐照片…', 0.05, 0.75], render: ['合成全景图…', 0.75, 0.95], finish: ['完成中…', 0.95, 1] };
+const STAGES = { prepare: ['Preparing photos…', 0, 0.05], align: ['Aligning photos…', 0.05, 0.75], render: ['Blending the panorama…', 0.75, 0.95], finish: ['Finishing…', 0.95, 1] };
 
 function setProgress(stage, p) {
-  const [label, a, b] = STAGES[stage] || ['处理中…', 0, 1];
+  const [label, a, b] = STAGES[stage] || ['Working…', 0, 1];
   $('proc-stage').textContent = label;
   $('proc-bar').style.width = `${Math.round((a + (b - a) * p) * 100)}%`;
 }
@@ -284,7 +285,7 @@ async function finish() {
     st.fov = res.fovDeg;
     showResult(res);
   } catch (err) {
-    alert(`拼接失败：${err.message}`);
+    alert(`Stitching failed: ${err.message}`);
     show('intro');
   }
 }
@@ -315,16 +316,48 @@ async function showResult(res) {
   const name = `jackstudio-360-${stamp}.jpg`;
   $('download').href = resultUrl;
   $('download').download = name;
-  $('result-info').textContent = `${res.width}×${res.height} · ${(res.blob.size / 1024 / 1024).toFixed(1)} MB · ${st.shots.length} 张照片`;
+  $('result-info').textContent = `${res.width}×${res.height} · ${(res.blob.size / 1024 / 1024).toFixed(1)} MB · ${st.shots.length} photos`;
 
   const file = new File([res.blob], name, { type: 'image/jpeg' });
   const share = $('share');
   share.hidden = !(navigator.canShare && navigator.canShare({ files: [file] }));
   share.onclick = () => navigator.share({ files: [file], title: 'Jack Studio 360°' }).catch(() => {});
 
+  // signed-in team members can save straight into the Studio's Asset Library
+  const save = $('save-asset');
+  save.hidden = !hasToken();
+  save.disabled = false;
+  save.textContent = 'Save to Asset Library';
+  save.onclick = () => saveToAssets(res.blob, stamp);
+  if (hasToken()) $('result-note').textContent = 'Save it to the Asset Library, then add it to a Showroom project in the Studio.';
+
   const { Viewer } = await import('@photo-sphere-viewer/core');
   viewer?.destroy();
   viewer = new Viewer({ container: $('cap-pano'), panorama: resultUrl, navbar: ['zoom', 'fullscreen'] });
+}
+
+async function saveToAssets(blob, stamp) {
+  const save = $('save-asset');
+  save.disabled = true;
+  save.textContent = 'Saving…';
+  try {
+    const bmp = await createImageBitmap(blob);
+    const cv = document.createElement('canvas');
+    cv.width = 480; cv.height = 240;
+    cv.getContext('2d').drawImage(bmp, 0, 0, 480, 240);
+    const thumb = await new Promise((r) => cv.toBlob(r, 'image/jpeg', 0.8));
+    const base = `media/assets/pano-${stamp}`;
+    await commit({
+      message: 'Add panorama from phone capture',
+      put: [{ path: `${base}.jpg`, content: blob }, { path: `${base}.thumb.jpg`, content: thumb }],
+    });
+    save.textContent = 'Saved ✓';
+    $('result-note').innerHTML = 'Saved to the Asset Library. <a href="../studio/#/assets" style="color:var(--tan)">Open the Studio</a>';
+  } catch (err) {
+    save.disabled = false;
+    save.textContent = 'Save to Asset Library';
+    alert(`Could not save: ${err.message}`);
+  }
 }
 
 $('again').addEventListener('click', () => {

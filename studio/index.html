@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Studio — Jack Studio 360°</title>
+  <link rel="preload" href="../assets/fonts/bebas-neue-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/vendor/photo-sphere-viewer/core.css">
+  <link rel="stylesheet" href="../assets/vendor/photo-sphere-viewer/markers.css">
+  <link rel="stylesheet" href="studio.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "../assets/vendor/three/three.module.min.js",
+        "@photo-sphere-viewer/core": "../assets/vendor/photo-sphere-viewer/core.module.js",
+        "@photo-sphere-viewer/markers-plugin": "../assets/vendor/photo-sphere-viewer/markers.module.js"
+      }
+    }
+  </script>
+</head>
+<body class="studio">
+  <!-- Signed out: login / forgot password -->
+  <main id="auth-view" class="auth" hidden></main>
+
+  <!-- Signed in: internal workspace -->
+  <div id="app-view" hidden>
+    <header class="site-header studio-header">
+      <a class="brand" href="#/">JACK STUDIO <span>360°</span></a>
+      <nav class="studio-nav" id="nav" aria-label="Studio">
+        <a href="#/" data-nav="home">Workspace</a>
+        <a href="#/projects" data-nav="projects">Projects</a>
+        <a href="#/new" data-nav="new">New Project</a>
+        <a href="#/library" data-nav="library">Product Library</a>
+        <a href="#/assets" data-nav="assets">Assets</a>
+        <a href="#/publish" data-nav="publish">Preview &amp; Publish</a>
+        <a href="#/team" data-nav="team" data-admin hidden>Team</a>
+      </nav>
+      <div class="studio-user">
+        <span class="site-status" id="site-status" hidden></span>
+        <span class="user-chip" id="user-chip"></span>
+        <button class="link-btn" type="button" id="sign-out">Sign out</button>
+      </div>
+    </header>
+    <main class="admin-main" id="view"></main>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

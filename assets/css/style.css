@@ -47,6 +47,7 @@ h1, h2, h3 { font-family: var(--font-head); font-weight: 400; letter-spacing: 0.
 .site-nav { display: flex; gap: 24px; }
 .site-nav a { text-decoration: none; font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
 .site-nav a[aria-current="page"] { color: var(--tan); }
+.site-nav .nav-login { color: var(--olive); }
 body.is-embed .site-header { display: none; }
 
 /* Buttons */
@@ -183,3 +184,10 @@ body.is-embed .viewer-stage { border: 0; }
   .drawer, .spin-hint, .spin-progress { transition: none; }
 }
 .showroom .error-msg { color: var(--ivory); }
+
+/* Preview of unpublished changes (opened from the Studio) */
+body.is-preview::after {
+  content: "Preview — not published"; position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 50;
+  padding: 6px 14px; border-radius: 999px; background: var(--tan); color: var(--ink);
+  font: 600 12px/1.4 var(--font-body); letter-spacing: 0.06em; text-transform: uppercase; pointer-events: none;
+}

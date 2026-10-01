@@ -1,0 +1,38 @@
+{
+  "updatedAt": "2026-10-01T08:46:08.007Z",
+  "projects": [
+    {
+      "id": "demo-bag-360",
+      "type": "product",
+      "title": "Demo Leather Bag 360°",
+      "status": "published",
+      "createdBy": "jackstudiocreative-prog",
+      "updatedBy": "jackstudiocreative-prog",
+      "updatedAt": "2026-10-01T08:46:02.393Z",
+      "publishedAt": "2026-10-01T08:46:02.393Z",
+      "cover": "media/products/demo-bag/frame-01.jpg",
+      "productId": "demo-bag",
+      "published": {
+        "cover": "media/products/demo-bag/frame-01.jpg",
+        "productId": "demo-bag",
+        "hasModel": false
+      }
+    },
+    {
+      "id": "main-showroom",
+      "type": "showroom",
+      "title": "Main Showroom",
+      "status": "published",
+      "createdBy": "jackstudiocreative-prog",
+      "updatedBy": "jackstudiocreative-prog",
+      "updatedAt": "2026-10-01T08:46:02.393Z",
+      "publishedAt": "2026-10-01T08:46:02.393Z",
+      "cover": "media/showroom/entrance-thumb.jpg",
+      "sceneCount": 2,
+      "published": {
+        "cover": "media/showroom/entrance-thumb.jpg",
+        "sceneCount": 2
+      }
+    }
+  ]
+}

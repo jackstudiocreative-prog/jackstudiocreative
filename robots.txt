@@ -1,8 +1,6 @@
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /api/
-Disallow: /*edit=1
-Disallow: /*embed=1
+Disallow: /studio/
+Disallow: /capture/
 
-Sitemap: https://360.jackstudio.com.my/sitemap.xml
+Sitemap: https://jackstudiocreative-prog.github.io/jackstudiocreative/sitemap.xml

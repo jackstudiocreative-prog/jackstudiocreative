@@ -1,40 +1,83 @@
-// Shared data helpers
-const cache = {};
+// Shared data helpers — used by the public site and the Studio.
+//
+// Repository layout
+//   data/index.json            one entry per project (title, status, cover…) — rebuilt on every save
+//   data/projects/<id>.json    a project: { id, type, title, …, draft: {...}, published: {...} | null }
+//   data/library.json          product library: { products: [{ id, name, series, price, description, image }] }
+//   media/…                    photos, panoramas, 3D models
+//
+// Project types
+//   product   draft = { productId, spin: { folder, pattern, count, pad, reverse? } | null, model: { glb, usdz?, poster? } | null }
+//   showroom  draft = { startScene, scenes: [{ id, name, panorama, thumb, view: { yaw, pitch }, hotspots: [...] }] }
+//   hotspots: { type: 'scene', target, label } | { type: 'product', project, label } | { type: 'info', title, text }, each with yaw/pitch
 
-export async function loadJSON(path) {
-  if (!cache[path]) {
-    cache[path] = fetch(path).then((r) => {
-      if (!r.ok) throw new Error(`Cannot load ${path} (${r.status})`);
+// Site root, worked out from this file's location (assets/js/ → ../../), so it works from any page.
+export const ROOT = new URL('../../', import.meta.url).href;
+export const siteURL = (path) => new URL(path, ROOT).href;
+
+const cache = new Map();
+export function loadJSON(path) {
+  if (!cache.has(path)) {
+    cache.set(path, fetch(siteURL(path), { cache: 'no-cache' }).then((r) => {
+      if (!r.ok) throw new Error(r.status === 404 ? 'Not found' : `Cannot load ${path} (${r.status})`);
       return r.json();
-    });
+    }));
   }
-  return cache[path];
+  return cache.get(path);
 }
 
-export async function getProducts() {
-  const data = await loadJSON('data/products.json');
-  return data.products;
+export const getIndex = () => loadJSON('data/index.json').catch(() => ({ projects: [] }));
+export const getProject = (id) => loadJSON(`data/projects/${encodeURIComponent(id)}.json`);
+export const getLibrary = () => loadJSON('data/library.json').catch(() => ({ products: [] }));
+export async function getLibraryProduct(id) {
+  const lib = await getLibrary();
+  return lib.products.find((p) => p.id === id) || null;
 }
 
-export async function getProduct(id) {
-  const products = await getProducts();
-  return products.find((p) => p.id === id) || null;
-}
+/** ?preview=1 shows the draft (used by the Studio's Preview button). */
+export const isPreview = () => new URLSearchParams(location.search).get('preview') === '1';
+export const versionOf = (project, preview = isPreview()) => (preview ? project.draft : project.published) || null;
 
-// Build the list of frame URLs for a product's 360° spin
 export function spinFrames(spin) {
   if (!spin) return [];
   const { folder, pattern, count, pad = 0 } = spin;
-  return Array.from({ length: count }, (_, i) =>
-    `${folder}/${pattern.replace('{n}', String(i + 1).padStart(pad, '0'))}`
-  );
+  return Array.from({ length: count }, (_, i) => siteURL(`${folder}/${pattern.replace('{n}', String(i + 1).padStart(pad, '0'))}`));
 }
 
-// ?embed=1 hides the header so the page can sit inside an iframe (e.g. Shopify)
+export function coverOf(type, data) {
+  if (!data) return '';
+  if (type === 'product') return data.spin ? `${data.spin.folder}/${data.spin.pattern.replace('{n}', String(1).padStart(data.spin.pad || 0, '0'))}` : data.model?.poster || '';
+  const start = data.scenes?.find((s) => s.id === data.startScene) || data.scenes?.[0];
+  return start ? start.thumb || start.panorama : '';
+}
+
+/** 'draft' (never published) | 'published' | 'changed' (published, with newer edits) */
+export function statusOf(project) {
+  if (!project.published) return 'draft';
+  return JSON.stringify(project.draft) === JSON.stringify(project.published) ? 'published' : 'changed';
+}
+
+/** The summary stored for a project in data/index.json. */
+export function indexEntry(p) {
+  const pub = p.published;
+  return {
+    id: p.id, type: p.type, title: p.title, status: statusOf(p),
+    createdBy: p.createdBy, updatedBy: p.updatedBy, updatedAt: p.updatedAt, publishedAt: p.publishedAt || null,
+    cover: coverOf(p.type, p.draft),
+    productId: p.type === 'product' ? p.draft?.productId || null : undefined,
+    sceneCount: p.type === 'showroom' ? p.draft?.scenes?.length || 0 : undefined,
+    published: pub ? {
+      cover: coverOf(p.type, pub),
+      productId: p.type === 'product' ? pub.productId : undefined,
+      sceneCount: p.type === 'showroom' ? pub.scenes?.length || 0 : undefined,
+      hasModel: p.type === 'product' ? Boolean(pub.model) : undefined,
+    } : null,
+  };
+}
+
+// ?embed=1 hides the header so a page can sit inside an iframe (e.g. Shopify)
 export function applyEmbedMode() {
-  if (new URLSearchParams(location.search).get('embed') === '1') {
-    document.body.classList.add('is-embed');
-  }
+  if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('is-embed');
 }
 
 export function escapeHTML(str = '') {

@@ -1,7 +1,7 @@
-// Showroom 360° — Photo Sphere Viewer + markers, scenes and hotspots from data/showroom.json
+// Showroom 360° — a published showroom project (data/projects/<id>.json)
 import { Viewer } from '@photo-sphere-viewer/core';
 import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin';
-import { loadJSON, getProduct, spinFrames, applyEmbedMode, escapeHTML } from './data.js';
+import { getIndex, getProject, getLibraryProduct, versionOf, isPreview, coverOf, siteURL, applyEmbedMode, escapeHTML } from './data.js';
 
 applyEmbedMode();
 
@@ -17,8 +17,10 @@ const els = {
 const ICONS = { scene: '→', product: '+', info: 'i' };
 const deg = (v) => `${v}deg`;
 
+const productNames = new Map(); // product project id → product name (default hotspot label)
+
 function markerHTML(h) {
-  const label = h.label || h.title || '';
+  const label = h.label || h.title || (h.type === 'product' ? productNames.get(h.project) : '') || '';
   return `<div class="hs hs--${h.type}">
     <span class="hs-dot" aria-hidden="true">${ICONS[h.type] || '+'}</span>
     ${label ? `<span class="hs-label">${escapeHTML(label)}</span>` : ''}
@@ -35,15 +37,40 @@ function toMarkers(scene) {
   }));
 }
 
+async function loadShowroom(params) {
+  let id = params.get('id');
+  if (!id) {
+    const index = await getIndex();
+    id = index.projects.find((p) => p.type === 'showroom' && p.published)?.id;
+    if (!id) throw new Error('No showroom has been published yet.');
+  }
+  const project = await getProject(id).catch(() => { throw new Error('This showroom does not exist.'); });
+  const data = versionOf(project);
+  if (!data || !data.scenes?.length) throw new Error(isPreview() ? 'This showroom has no scenes yet.' : 'This showroom is not published yet.');
+  // default labels for product hotspots
+  const ids = new Set(data.scenes.flatMap((s) => s.hotspots.filter((h) => h.type === 'product').map((h) => h.project)));
+  await Promise.all([...ids].map(async (pid) => {
+    try {
+      const pr = await getProject(pid);
+      const v = versionOf(pr) || pr.draft;
+      const info = v?.productId ? await getLibraryProduct(v.productId) : null;
+      productNames.set(pid, info?.name || pr.title);
+    } catch {}
+  }));
+  return { id, title: project.title, startScene: data.startScene, scenes: data.scenes };
+}
+
 async function init() {
-  const config = await loadJSON('data/showroom.json');
-  const scenes = Object.fromEntries(config.scenes.map((s) => [s.id, s]));
   const params = new URLSearchParams(location.search);
+  const config = await loadShowroom(params);
+  if (isPreview()) document.body.classList.add('is-preview');
+  document.title = `${config.title} — Jack Studio 360°`;
+  const scenes = Object.fromEntries(config.scenes.map((s) => [s.id, s]));
   let current = scenes[params.get('scene')] || scenes[config.startScene] || config.scenes[0];
 
   const viewer = new Viewer({
     container: els.pano,
-    panorama: current.panorama,
+    panorama: siteURL(current.panorama),
     defaultYaw: deg(current.view?.yaw ?? 0),
     defaultPitch: deg(current.view?.pitch ?? 0),
     navbar: ['zoom', 'move', 'caption', 'fullscreen'],
@@ -57,7 +84,7 @@ async function init() {
   function renderSceneList() {
     els.list.innerHTML = config.scenes.map((s) => `
       <li><button type="button" data-scene="${s.id}" aria-current="${s.id === current.id}">
-        ${s.thumb ? `<img src="${s.thumb}" alt="" loading="lazy">` : ''}
+        ${s.thumb ? `<img src="${siteURL(s.thumb)}" alt="" loading="lazy">` : ''}
         <span>${escapeHTML(s.name)}</span>
       </button></li>`).join('');
     els.list.hidden = config.scenes.length < 2;
@@ -67,6 +94,7 @@ async function init() {
     els.title.textContent = current.name;
     renderSceneList();
     const url = new URL(location.href);
+    url.searchParams.set('id', config.id);
     url.searchParams.set('scene', current.id);
     history.replaceState(null, '', url);
   }
@@ -78,7 +106,7 @@ async function init() {
     closeDrawer();
     markers.clearMarkers();
     setSceneUI();
-    await viewer.setPanorama(next.panorama, {
+    await viewer.setPanorama(siteURL(next.panorama), {
       position: { yaw: deg(next.view?.yaw ?? 0), pitch: deg(next.view?.pitch ?? 0) },
       transition: { speed: 1200, effect: 'fade', rotation: false },
     });
@@ -90,7 +118,7 @@ async function init() {
   markers.addEventListener('select-marker', ({ marker }) => {
     const h = marker.data;
     if (h.type === 'scene') goTo(h.target);
-    else if (h.type === 'product') openProduct(h.product);
+    else if (h.type === 'product') openProduct(h.project);
     else if (h.type === 'info') openInfo(h);
   });
 
@@ -135,19 +163,22 @@ function closeDrawer() {
 }
 
 async function openProduct(id) {
-  const p = await getProduct(id);
-  if (!p) return openDrawer(`<p>Product "${escapeHTML(id)}" not found in data/products.json.</p>`);
-  const cover = p.cover || spinFrames(p.spin)[0] || '';
-  const embed = document.body.classList.contains('is-embed') ? '&embed=1' : '';
+  let project;
+  try { project = await getProject(id); } catch { return openDrawer('<p>This product is not available.</p>'); }
+  const data = versionOf(project);
+  if (!data) return openDrawer('<p>This product is not published yet.</p>');
+  const info = data.productId ? await getLibraryProduct(data.productId) : null;
+  const cover = info?.image ? siteURL(info.image) : coverOf('product', data) ? siteURL(coverOf('product', data)) : '';
+  const name = info?.name || project.title;
+  const keep = ['embed', 'preview'].filter((k) => new URLSearchParams(location.search).get(k) === '1').map((k) => `&${k}=1`).join('');
   openDrawer(`
-    ${cover ? `<img src="${cover}" alt="${escapeHTML(p.name)}">` : ''}
-    <div class="eyebrow">${escapeHTML(p.series || '')}</div>
-    <h2 id="drawer-title">${escapeHTML(p.name)}</h2>
-    ${p.price ? `<div class="price">${escapeHTML(p.price)}</div>` : ''}
-    ${p.description ? `<p>${escapeHTML(p.description)}</p>` : ''}
+    ${cover ? `<img src="${cover}" alt="${escapeHTML(name)}">` : ''}
+    <div class="eyebrow">${escapeHTML(info?.series || '')}</div>
+    <h2 id="drawer-title">${escapeHTML(name)}</h2>
+    ${info?.price ? `<div class="price">${escapeHTML(info.price)}</div>` : ''}
+    ${info?.description ? `<p>${escapeHTML(info.description)}</p>` : ''}
     <div class="drawer-actions">
-      <a class="btn" href="product.html?id=${encodeURIComponent(p.id)}${embed}">View in 360°</a>
-      ${p.shopUrl ? `<a class="btn btn--ghost" href="${p.shopUrl}" target="_top" rel="noopener">Shop now</a>` : ''}
+      <a class="btn" href="product.html?id=${encodeURIComponent(project.id)}${keep}">View in 360°</a>
     </div>`);
 }
 

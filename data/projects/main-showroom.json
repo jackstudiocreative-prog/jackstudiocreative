@@ -1,0 +1,139 @@
+{
+  "id": "main-showroom",
+  "type": "showroom",
+  "title": "Main Showroom",
+  "createdBy": "jackstudiocreative-prog",
+  "createdAt": "2026-10-01T08:46:02.393Z",
+  "updatedBy": "jackstudiocreative-prog",
+  "updatedAt": "2026-10-01T08:46:02.393Z",
+  "publishedBy": "jackstudiocreative-prog",
+  "publishedAt": "2026-10-01T08:46:02.393Z",
+  "draft": {
+    "startScene": "entrance",
+    "scenes": [
+      {
+        "id": "entrance",
+        "name": "Entrance",
+        "panorama": "media/showroom/entrance.jpg",
+        "thumb": "media/showroom/entrance-thumb.jpg",
+        "view": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "hotspots": [
+          {
+            "type": "scene",
+            "target": "bag-wall",
+            "label": "Bag Wall",
+            "yaw": 28,
+            "pitch": -8
+          },
+          {
+            "type": "product",
+            "project": "demo-bag-360",
+            "label": "Demo Leather Bag",
+            "yaw": -25,
+            "pitch": -12
+          },
+          {
+            "type": "info",
+            "title": "Since 2013",
+            "text": "Founded in Klang, Selangor. Edit this text in data/showroom.json.",
+            "yaw": 0,
+            "pitch": 8
+          }
+        ]
+      },
+      {
+        "id": "bag-wall",
+        "name": "Bag Wall",
+        "panorama": "media/showroom/bag-wall.jpg",
+        "thumb": "media/showroom/bag-wall-thumb.jpg",
+        "view": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "hotspots": [
+          {
+            "type": "scene",
+            "target": "entrance",
+            "label": "Back to Entrance",
+            "yaw": 180,
+            "pitch": -8
+          },
+          {
+            "type": "product",
+            "project": "demo-bag-360",
+            "label": "Demo Leather Bag",
+            "yaw": 20,
+            "pitch": -10
+          }
+        ]
+      }
+    ]
+  },
+  "published": {
+    "startScene": "entrance",
+    "scenes": [
+      {
+        "id": "entrance",
+        "name": "Entrance",
+        "panorama": "media/showroom/entrance.jpg",
+        "thumb": "media/showroom/entrance-thumb.jpg",
+        "view": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "hotspots": [
+          {
+            "type": "scene",
+            "target": "bag-wall",
+            "label": "Bag Wall",
+            "yaw": 28,
+            "pitch": -8
+          },
+          {
+            "type": "product",
+            "project": "demo-bag-360",
+            "label": "Demo Leather Bag",
+            "yaw": -25,
+            "pitch": -12
+          },
+          {
+            "type": "info",
+            "title": "Since 2013",
+            "text": "Founded in Klang, Selangor. Edit this text in data/showroom.json.",
+            "yaw": 0,
+            "pitch": 8
+          }
+        ]
+      },
+      {
+        "id": "bag-wall",
+        "name": "Bag Wall",
+        "panorama": "media/showroom/bag-wall.jpg",
+        "thumb": "media/showroom/bag-wall-thumb.jpg",
+        "view": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "hotspots": [
+          {
+            "type": "scene",
+            "target": "entrance",
+            "label": "Back to Entrance",
+            "yaw": 180,
+            "pitch": -8
+          },
+          {
+            "type": "product",
+            "project": "demo-bag-360",
+            "label": "Demo Leather Bag",
+            "yaw": 20,
+            "pitch": -10
+          }
+        ]
+      }
+    ]
+  }
+}

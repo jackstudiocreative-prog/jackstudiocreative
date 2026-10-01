@@ -1,0 +1,12 @@
+{
+  "products": [
+    {
+      "id": "demo-bag",
+      "name": "Demo Leather Bag",
+      "series": "Urban Carry",
+      "price": "",
+      "description": "Placeholder product. Replace with a real Jack Studio product and its turntable photos.",
+      "image": "media/products/demo-bag/frame-01.jpg"
+    }
+  ]
+}

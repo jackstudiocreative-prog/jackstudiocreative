@@ -1,6 +1,6 @@
-// Product 360° page — image-sequence spin and/or 3D model (GLB) with AR
+// Product 360° page — a published product project: image-sequence spin and/or 3D model (GLB) with AR
 import { SpinViewer } from './spin-viewer.js';
-import { getProduct, spinFrames, applyEmbedMode, escapeHTML } from './data.js';
+import { getIndex, getProject, getLibraryProduct, versionOf, isPreview, spinFrames, siteURL, applyEmbedMode, escapeHTML } from './data.js';
 
 const MODEL_VIEWER_SRC = new URL('../vendor/model-viewer/model-viewer.min.js', import.meta.url).href;
 
@@ -31,9 +31,9 @@ async function showModel(p) {
     });
   }
   const mv = document.createElement('model-viewer');
-  mv.setAttribute('src', p.model.glb);
-  if (p.model.usdz) mv.setAttribute('ios-src', p.model.usdz);
-  if (p.model.poster) mv.setAttribute('poster', p.model.poster);
+  mv.setAttribute('src', siteURL(p.model.glb));
+  if (p.model.usdz) mv.setAttribute('ios-src', siteURL(p.model.usdz));
+  if (p.model.poster) mv.setAttribute('poster', siteURL(p.model.poster));
   mv.setAttribute('alt', `${p.name} 3D model`);
   const attrs = { 'camera-controls': '', ar: '', 'shadow-intensity': '0.6', 'touch-action': 'pan-y' };
   Object.entries(attrs).forEach(([k, v]) => mv.setAttribute(k, v));
@@ -65,23 +65,32 @@ function renderInfo(p) {
     <div class="eyebrow">${escapeHTML(p.series || '')}</div>
     <h1>${escapeHTML(p.name)}</h1>
     ${p.price ? `<div class="price">${escapeHTML(p.price)}</div>` : ''}
-    ${p.description ? `<p>${escapeHTML(p.description)}</p>` : ''}
-    ${p.shopUrl ? `<a class="btn" href="${p.shopUrl}" target="_top" rel="noopener">Shop now</a>` : ''}`;
+    ${p.description ? `<p>${escapeHTML(p.description)}</p>` : ''}`;
 }
 
 async function init() {
   const id = new URLSearchParams(location.search).get('id');
-  const p = id && (await getProduct(id));
-  if (!p) {
-    stage.innerHTML = `<p class="error-msg">Product not found. Check the <code>?id=</code> in the URL and data/products.json.</p>`;
+  let project = null;
+  try { project = id ? await getProject(id) : null; } catch {}
+  const data = project && versionOf(project);
+  if (!data) {
+    stage.innerHTML = `<p class="error-msg">${project ? 'This product is not published yet.' : 'Product not found.'}</p>`;
     return;
   }
+  if (isPreview()) document.body.classList.add('is-preview');
+  const lib = data.productId ? await getLibraryProduct(data.productId) : null;
+  const p = { name: lib?.name || project.title, series: lib?.series, price: lib?.price, description: lib?.description, spin: data.spin, model: data.model };
   renderInfo(p);
   const first = renderTabs(p);
   if (first === 'spin') showSpin(p);
   else if (first === 'model') showModel(p);
   else stage.innerHTML = '<p class="error-msg">No 360° media for this product yet.</p>';
 }
+
+getIndex().then((index) => {
+  const first = index.projects.find((x) => x.type === 'showroom' && x.published);
+  if (first) document.querySelectorAll('[data-first-showroom]').forEach((a) => { a.href = `showroom.html?id=${encodeURIComponent(first.id)}`; });
+});
 
 init().catch((err) => {
   console.error(err);
