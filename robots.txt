@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Disallow: /*edit=1
+Disallow: /*embed=1
+
+Sitemap: https://360.jackstudio.com.my/sitemap.xml

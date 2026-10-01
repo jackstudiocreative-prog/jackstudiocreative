@@ -1,0 +1,19 @@
+{
+  "products": [
+    {
+      "id": "demo-bag",
+      "name": "Demo Leather Bag",
+      "series": "Urban Carry",
+      "price": "RM 0.00",
+      "description": "Placeholder product. Replace with a real Jack Studio product and its turntable photos.",
+      "shopUrl": "https://www.jackstudio.com.my",
+      "spin": {
+        "folder": "media/products/demo-bag",
+        "pattern": "frame-{n}.jpg",
+        "count": 36,
+        "pad": 2
+      },
+      "model": null
+    }
+  ]
+}

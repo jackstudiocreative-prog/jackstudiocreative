@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Product 360° — Jack Studio</title>
+  <meta name="description" content="View Jack Studio leather bags and wallets in 360° and 3D.">
+  <link rel="preload" href="assets/fonts/bebas-neue-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html">JACK STUDIO <span>360°</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="index.html">Home</a>
+      <a href="showroom.html">Showroom</a>
+    </nav>
+  </header>
+
+  <main class="product-page">
+    <section aria-label="360° viewer">
+      <div class="viewer-tabs" id="viewer-tabs" role="tablist" hidden></div>
+      <div class="viewer-stage" id="viewer-stage"></div>
+    </section>
+    <section class="product-info" id="product-info"></section>
+  </main>
+
+  <script type="module" src="assets/js/product.js"></script>
+</body>
+</html>

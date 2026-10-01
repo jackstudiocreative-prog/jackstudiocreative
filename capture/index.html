@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#2b211c">
+  <title>手机拍 360° — Jack Studio</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/vendor/photo-sphere-viewer/core.css">
+  <link rel="stylesheet" href="capture.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "../assets/vendor/three/three.module.min.js",
+        "@photo-sphere-viewer/core": "../assets/vendor/photo-sphere-viewer/core.module.js"
+      }
+    }
+  </script>
+</head>
+<body class="cap">
+
+  <!-- 1. Intro -->
+  <section class="cap-screen cap-intro" id="intro">
+    <div class="cap-intro-inner">
+      <p class="cap-eyebrow">JACK STUDIO 360°</p>
+      <h1>手机拍 360° 全景</h1>
+      <p class="cap-lead">跟着画面上的圆点转一圈，网站会自动把照片拼成 360° 全景图。</p>
+      <ol class="cap-tips">
+        <li><b>竖着拿手机</b>，用一般的 1× 镜头</li>
+        <li><b>站在同一个点</b>，以手机为中心转动，脚不要移动</li>
+        <li><b>对准圆点后停一下</b>，会自动拍照</li>
+        <li>光线保持一样，避免有人走过</li>
+      </ol>
+      <p class="cap-error" id="intro-error" role="alert" hidden></p>
+      <button class="cap-btn" type="button" id="start">开始拍摄</button>
+      <p class="cap-note">大约需要 2–3 分钟，共 38 张照片。</p>
+    </div>
+  </section>
+
+  <!-- 2. Capture -->
+  <section class="cap-screen cap-live" id="live" hidden>
+    <video id="video" playsinline muted autoplay></video>
+    <canvas id="overlay" aria-hidden="true"></canvas>
+    <div class="cap-flash" id="flash"></div>
+    <div class="cap-reticle" aria-hidden="true"></div>
+
+    <div class="cap-top">
+      <button class="cap-icon" type="button" id="cancel" aria-label="取消">×</button>
+      <div class="cap-count"><span id="count">0</span> / <span id="total">38</span></div>
+      <button class="cap-icon cap-icon--text" type="button" id="undo" disabled>撤销</button>
+    </div>
+    <p class="cap-hint" id="hint" aria-live="polite">把中间的圆圈对准圆点</p>
+
+    <div class="cap-bottom">
+      <button class="cap-shutter" type="button" id="shutter" aria-label="手动拍照"></button>
+      <button class="cap-btn cap-btn--ghost" type="button" id="finish" disabled>完成</button>
+    </div>
+  </section>
+
+  <!-- 3. Processing -->
+  <section class="cap-screen cap-proc" id="proc" hidden>
+    <div class="cap-intro-inner">
+      <h2>正在拼接全景图</h2>
+      <p class="cap-lead" id="proc-stage">准备照片…</p>
+      <div class="cap-progress"><i id="proc-bar"></i></div>
+      <p class="cap-note">请保持这个页面打开，大约需要 20–60 秒。</p>
+    </div>
+  </section>
+
+  <!-- 4. Result -->
+  <section class="cap-screen cap-result" id="result" hidden>
+    <div class="cap-pano" id="cap-pano"></div>
+    <div class="cap-result-bar">
+      <p class="cap-note" id="result-info"></p>
+      <div class="cap-actions">
+        <a class="cap-btn" id="download" download="jackstudio-360.jpg">下载全景图</a>
+        <button class="cap-btn cap-btn--ghost" type="button" id="share" hidden>分享</button>
+        <button class="cap-btn cap-btn--ghost" type="button" id="again">重新拍摄</button>
+      </div>
+      <p class="cap-note">下载后，在后台 Showroom 按「新增场景」上传这张图。</p>
+    </div>
+  </section>
+
+  <script type="module" src="capture.js"></script>
+</body>
+</html>

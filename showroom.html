@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Virtual Showroom 360° — Jack Studio</title>
+  <meta name="description" content="Explore the Jack Studio leather goods showroom in 360°. Tap any product to see details and shop.">
+  <link rel="canonical" href="https://360.jackstudio.com.my/showroom.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Virtual Showroom 360° — Jack Studio">
+  <meta property="og:description" content="Explore the Jack Studio leather goods showroom in 360°. Tap any product to see details and shop.">
+  <meta property="og:url" content="https://360.jackstudio.com.my/showroom.html">
+  <meta property="og:image" content="https://360.jackstudio.com.my/media/showroom/entrance-thumb.jpg">
+  <link rel="preload" href="assets/fonts/bebas-neue-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/vendor/photo-sphere-viewer/core.css">
+  <link rel="stylesheet" href="assets/vendor/photo-sphere-viewer/markers.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./assets/vendor/three/three.module.min.js",
+        "@photo-sphere-viewer/core": "./assets/vendor/photo-sphere-viewer/core.module.js",
+        "@photo-sphere-viewer/markers-plugin": "./assets/vendor/photo-sphere-viewer/markers.module.js"
+      }
+    }
+  </script>
+</head>
+<body class="showroom-page">
+  <header class="site-header">
+    <a class="brand" href="index.html">JACK STUDIO <span>360°</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="index.html">Home</a>
+      <a href="showroom.html" aria-current="page">Showroom</a>
+    </nav>
+  </header>
+
+  <main class="showroom">
+    <h1 class="visually-hidden">Jack Studio Showroom 360°</h1>
+    <div id="pano" aria-label="360° showroom view"></div>
+    <div class="scene-title" id="scene-title" aria-live="polite"></div>
+    <ul class="scene-list" id="scene-list" aria-label="Showroom areas"></ul>
+
+    <aside class="drawer" id="drawer" aria-hidden="true" aria-labelledby="drawer-title" inert>
+      <button class="drawer-close" id="drawer-close" type="button" aria-label="Close">×</button>
+      <div class="drawer-body" id="drawer-body"></div>
+    </aside>
+  </main>
+
+  <script type="module" src="assets/js/showroom.js"></script>
+</body>
+</html>
