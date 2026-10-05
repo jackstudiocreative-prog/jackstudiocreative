@@ -1,6 +1,19 @@
 {
-  "updatedAt": "2026-10-01T09:22:25.050Z",
+  "updatedAt": "2026-10-05T03:11:54.629Z",
   "projects": [
+    {
+      "id": "testing",
+      "type": "showroom",
+      "title": "testing",
+      "status": "draft",
+      "createdBy": "jackstudiocreative-prog",
+      "updatedBy": "jackstudiocreative-prog",
+      "updatedAt": "2026-10-05T03:11:50.756Z",
+      "publishedAt": null,
+      "cover": "",
+      "sceneCount": 0,
+      "published": null
+    },
     {
       "id": "demo-bag-360",
       "type": "product",

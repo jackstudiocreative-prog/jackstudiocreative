@@ -1,0 +1,16 @@
+{
+  "id": "testing",
+  "type": "showroom",
+  "title": "testing",
+  "createdBy": "jackstudiocreative-prog",
+  "createdAt": "2026-10-05T03:11:50.752Z",
+  "updatedBy": "jackstudiocreative-prog",
+  "updatedAt": "2026-10-05T03:11:50.756Z",
+  "publishedBy": null,
+  "publishedAt": null,
+  "draft": {
+    "startScene": "",
+    "scenes": []
+  },
+  "published": null
+}
