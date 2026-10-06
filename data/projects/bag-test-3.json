@@ -1,0 +1,17 @@
+{
+  "id": "bag-test-3",
+  "type": "product",
+  "title": "bag test",
+  "createdBy": "jackstudiocreative-prog",
+  "createdAt": "2026-10-06T04:35:27.328Z",
+  "updatedBy": "jackstudiocreative-prog",
+  "updatedAt": "2026-10-06T04:35:27.328Z",
+  "publishedBy": null,
+  "publishedAt": null,
+  "draft": {
+    "productId": null,
+    "spin": null,
+    "model": null
+  },
+  "published": null
+}
