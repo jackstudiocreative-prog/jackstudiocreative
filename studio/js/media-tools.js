@@ -41,8 +41,9 @@ export async function photosToFrames(files, { maxSize = 1200, onProgress } = {})
 }
 
 /** Turntable video → N evenly spaced frames. Assumes the clip shows exactly one full turn
- *  between `start` and `end` (seconds). */
-export async function videoToFrames(file, { count = 36, maxSize = 1200, start = 0, end = null, onProgress } = {}) {
+ *  between `start` and `end` (seconds). `inclusive` also takes the very last moment — for a clip
+ *  that ends somewhere new (a product opening) rather than back where it started. */
+export async function videoToFrames(file, { count = 36, maxSize = 1200, start = 0, end = null, inclusive = false, onProgress } = {}) {
   const url = URL.createObjectURL(file);
   const video = document.createElement('video');
   video.muted = true;
@@ -59,7 +60,7 @@ export async function videoToFrames(file, { count = 36, maxSize = 1200, start = 
     const to = Math.min(duration, end ?? duration);
     if (!(to > from)) throw new Error('Video start/end time is not valid');
     const [w, h] = fitSize(video.videoWidth, video.videoHeight, maxSize);
-    const step = (to - from) / count; // last frame stops one step before the start angle repeats
+    const step = (to - from) / (inclusive ? Math.max(1, count - 1) : count); // a full turn stops one step before the start angle repeats
     const frames = [];
     for (let i = 0; i < count; i++) {
       await new Promise((resolve) => {

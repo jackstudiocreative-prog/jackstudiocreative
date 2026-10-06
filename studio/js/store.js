@@ -43,6 +43,7 @@ function referenced(p) {
     if (!v) continue;
     if (p.type === 'product') {
       if (v.spin) refs.add(`${v.spin.folder}/`);
+      if (v.action?.folder) refs.add(`${v.action.folder}/`); // open / close photos
       if (v.model) Object.values(v.model).forEach((x) => x && refs.add(x));
     } else {
       (v.scenes || []).forEach((s) => { refs.add(s.panorama); if (s.thumb) refs.add(s.thumb); });
