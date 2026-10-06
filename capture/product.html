@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#2b211c">
+  <title>Product Capture — Jack Studio</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="capture.css">
+</head>
+<body class="cap">
+
+  <!-- 1. Set-up -->
+  <section class="cap-screen cap-intro" id="intro">
+    <div class="cap-intro-inner">
+      <p class="cap-eyebrow">JACK STUDIO 360°</p>
+      <h1>Shoot a product</h1>
+      <p class="cap-lead">Phone on a tripod, product on the turntable. The guides on screen keep every photo lined up.</p>
+
+      <fieldset class="pc-set">
+        <legend>What are you shooting?</legend>
+        <div class="pc-seg">
+          <label><input type="radio" name="shoot" value="spin" checked><span><b>360° turn</b><small>One full turn on the turntable</small></span></label>
+          <label><input type="radio" name="shoot" value="action"><span><b>Open / close</b><small>A zip, flap or lid opening, step by step</small></span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="pc-set">
+        <legend>How are the photos taken?</legend>
+        <div class="pc-seg">
+          <label><input type="radio" name="trigger" value="manual" checked><span><b>Tap for each photo</b><small id="manual-sub">Turntable turned by hand</small></span></label>
+          <label><input type="radio" name="trigger" value="auto"><span><b>Automatic</b><small id="auto-sub">Electric turntable</small></span></label>
+        </div>
+      </fieldset>
+
+      <div class="pc-row">
+        <label class="pc-field" id="f-count"><span>Photos in one turn</span>
+          <select id="count-sel">
+            <option value="24">24 (lighter)</option><option value="36" selected>36 (recommended)</option>
+            <option value="48">48</option><option value="72">72 (smoothest)</option>
+          </select></label>
+        <label class="pc-field" id="f-turn" hidden><span>Seconds for one full turn</span>
+          <input id="turn-secs" type="number" min="10" max="900" step="1" value="60" inputmode="decimal"></label>
+        <label class="pc-field" id="f-every" hidden><span>A photo every</span>
+          <select id="every-sel">
+            <option value="2">2 seconds</option><option value="3" selected>3 seconds</option>
+            <option value="5">5 seconds</option><option value="8">8 seconds</option>
+          </select></label>
+      </div>
+      <p class="cap-note pc-plan" id="plan"></p>
+
+      <ol class="cap-tips" id="tips"></ol>
+      <p class="cap-error" id="intro-error" role="alert" hidden></p>
+      <button class="cap-btn" type="button" id="start">Open camera</button>
+      <p class="cap-note"><a class="pc-link" href="./">Capturing a showroom panorama instead?</a></p>
+    </div>
+  </section>
+
+  <!-- 2. Shooting -->
+  <section class="cap-screen cap-live pc-live" id="live" hidden>
+    <video id="video" playsinline muted autoplay></video>
+    <canvas id="overlay" aria-hidden="true"></canvas>
+    <div class="cap-flash" id="flash"></div>
+
+    <div class="cap-top">
+      <button class="cap-icon" type="button" id="cancel" aria-label="Cancel">×</button>
+      <div class="cap-count"><span id="count">0</span><span id="of"> / <span id="total">36</span></span></div>
+      <button class="cap-icon cap-icon--text" type="button" id="undo" disabled>Undo</button>
+    </div>
+    <p class="cap-hint pc-hint" id="hint" aria-live="polite"></p>
+
+    <div class="cap-bottom pc-bottom">
+      <button class="cap-icon cap-icon--text pc-ghost" type="button" id="ghost" aria-pressed="true">Ghost</button>
+      <button class="cap-shutter" type="button" id="shutter" aria-label="Take photo"></button>
+      <button class="cap-btn cap-btn--ghost" type="button" id="finish" disabled>Finish</button>
+    </div>
+  </section>
+
+  <!-- 3. Review and save -->
+  <section class="cap-screen pc-review" id="review" hidden>
+    <div class="pc-stage-wrap"><div class="pc-stage" id="stage"></div></div>
+    <div class="cap-result-bar pc-bar">
+      <p class="cap-note" id="review-info"></p>
+      <div id="save-box" hidden>
+        <label class="pc-field"><span>Save to product project</span><select id="project"></select></label>
+        <label class="pc-field" id="f-new" hidden><span>New project name</span>
+          <input id="new-name" maxlength="80" placeholder="e.g. Urban Tote Brown"></label>
+      </div>
+      <div class="cap-progress" id="save-progress" hidden><i></i></div>
+      <p class="cap-error" id="save-error" role="alert" hidden></p>
+      <div class="cap-actions">
+        <button class="cap-btn" type="button" id="save" hidden>Save to project</button>
+        <button class="cap-btn cap-btn--ghost" type="button" id="download">Download photos</button>
+        <button class="cap-btn cap-btn--ghost" type="button" id="again">Shoot again</button>
+      </div>
+      <p class="cap-note" id="review-note"></p>
+    </div>
+  </section>
+
+  <script type="module" src="product.js"></script>
+</body>
+</html>
