@@ -1,7 +1,7 @@
 // Shared bits for the Workspace and Projects pages: icons, the ··· menu on a project,
 // and the New Project button with its type menu
-import { esc, statusBadge, timeAgo, TYPE_LABEL } from '../ui.js';
-import { mediaURL } from '../store.js';
+import { esc, statusBadge, timeAgo, TYPE_LABEL, toast } from '../ui.js';
+import { mediaURL, loadProject, deleteProject } from '../store.js';
 import { SITE_BASE } from '../config.js';
 
 export const icon = (paths) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
@@ -20,8 +20,11 @@ export const ICONS = {
 export const pageURL = (p) => `${SITE_BASE}/${p.type === 'showroom' ? 'showroom' : 'product'}.html?id=${encodeURIComponent(p.id)}`;
 export const openURL = (p) => `#/project/${encodeURIComponent(p.id)}`;
 
-/** The ··· menu on a project: preview, share or publish, edit. */
-export function projectMenu(p) {
+/** Who may delete a project: admins, and the person who created it while it has never been published. */
+export const canDelete = (p, user) => user.role === 'admin' || (p.createdBy === user.login && !p.published);
+
+/** The ··· menu on a project: preview, share or publish, edit, and delete for those allowed to. */
+export function projectMenu(p, user) {
   return `
     <details class="ws-menu">
       <summary aria-label="More actions for ${esc(p.title)}"><span aria-hidden="true">···</span></summary>
@@ -29,8 +32,38 @@ export function projectMenu(p) {
         <a href="${esc(pageURL(p))}&preview=1" target="_blank" rel="noopener">Preview ↗</a>
         ${p.published ? `<a href="#/publish/${encodeURIComponent(p.id)}">Share link &amp; QR code</a>` : '<a href="#/publish">Publish</a>'}
         <a href="${openURL(p)}">Edit</a>
+        ${user && canDelete(p, user) ? `<button type="button" class="ws-menu-danger" data-delete="${esc(p.id)}">Delete</button>` : ''}
       </div>
     </details>`;
+}
+
+/** Makes the Delete item in the ··· menus work. Asks first, deletes the project with its media, then calls onDeleted. */
+export function bindDelete(el, { saved, onDeleted }) {
+  let busy = false;
+  const onClick = async (e) => {
+    const btn = e.target.closest('[data-delete]');
+    if (!btn || busy) return;
+    busy = true;
+    const label = btn.textContent;
+    try {
+      const { project: p, sha } = await loadProject(btn.dataset.delete);
+      if (!confirm(`Delete "${p.title}"? Its photos and panoramas are deleted too${p.published ? ', and the public page stops working' : ''}. This cannot be undone.`)) return;
+      btn.disabled = true;
+      btn.textContent = 'Deleting…';
+      await deleteProject(p, sha);
+      saved?.();
+      toast('Project deleted');
+      onDeleted?.(p);
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = label;
+      toast(err.message, true);
+    } finally {
+      busy = false;
+    }
+  };
+  el.addEventListener('click', onClick);
+  return () => el.removeEventListener('click', onClick);
 }
 
 /** "+ New Project": opens a small menu to choose the project type (this replaces the old type page). */
@@ -63,14 +96,14 @@ export function bindMenus(el) {
 }
 
 /** A project as a tall card: picture on top, then name, type, status and who edited it. */
-export function projectCard(p) {
+export function projectCard(p, user) {
   const open = openURL(p);
   return `
     <li class="pj-card">
       <a class="pj-card-img" href="${open}" tabindex="-1" aria-hidden="true">
         ${p.cover ? `<img src="${esc(mediaURL(p.cover))}" alt="" loading="lazy">` : '<span class="ws-noimg">No media yet</span>'}
       </a>
-      ${projectMenu(p)}
+      ${projectMenu(p, user)}
       <div class="pj-card-body">
         <h3><a href="${open}">${esc(p.title)}</a></h3>
         <div class="ws-meta"><span>${TYPE_LABEL[p.type]}</span>${statusBadge(p.status)}</div>
