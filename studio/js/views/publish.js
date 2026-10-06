@@ -29,7 +29,7 @@ async function renderList(el, { user, go, saved }) {
           ${p.status !== 'published' ? `<button class="btn btn--sm" type="button" data-publish="${esc(p.id)}">${p.status === 'changed' ? 'Publish changes' : 'Publish'}</button>` : ''}
           ${p.published ? `<a class="btn btn--ghost btn--sm" href="#/publish/${encodeURIComponent(p.id)}">Share</a>` : ''}
         </div>
-      </div>`).join('')}</div>` : '<div class="empty">No projects yet. <a href="#/new">Create one</a>.</div>'}`;
+      </div>`).join('')}</div>` : '<div class="empty">No projects yet. <a href="#/projects/new">Create one</a>.</div>'}`;
 
   el.querySelectorAll('[data-publish]').forEach((b) => b.addEventListener('click', () => busy(b, 'Publishing…', async () => {
     try {
