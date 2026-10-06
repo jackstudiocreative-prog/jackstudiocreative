@@ -194,6 +194,7 @@ export const libraryUpdate = (product, removeId = null) => ({
 
 export async function saveLibraryProduct(product, image, oldImage) {
   const put = [];
+  product.updatedAt = now(); // shown as "Last updated" in the Product Library
   if (image) {
     product.image = `media/library/${product.id}-${Date.now().toString(36)}.jpg`;
     put.push({ path: product.image, content: image });
