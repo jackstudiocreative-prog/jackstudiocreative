@@ -14,7 +14,7 @@ import * as team from './views/team.js';
 
 const $ = (id) => document.getElementById(id);
 const ROUTES = {
-  '': ['home', home], projects: ['projects', projects], new: ['new', newProject], project: ['projects', editor],
+  '': ['home', home], projects: ['projects', projects], new: ['projects', newProject], project: ['projects', editor],
   library: ['library', library], photos: ['library', photoLibrary], assets: ['assets', assets], publish: ['publish', publish], team: ['team', team],
 };
 
