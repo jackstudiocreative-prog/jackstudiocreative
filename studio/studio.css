@@ -23,7 +23,7 @@ body.studio { background: #f4f0e6; min-height: 100vh; }
 .btn--danger { background: transparent; color: #a3341f; border-color: rgba(163, 52, 31, 0.4); }
 .btn--danger:hover { background: rgba(163, 52, 31, 0.06); }
 .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
-.page-head .link-btn { display: inline-block; margin-bottom: 8px; font-size: 13px; }
+.page-head .link-btn { display: block; width: fit-content; margin-bottom: 14px; font-size: 13px; } /* the back link sits on its own line, above the title */
 .link-btn { background: none; border: 0; padding: 0; color: var(--espresso); text-decoration: underline; cursor: pointer; font: inherit; }
 
 /* Panels & forms */
@@ -207,7 +207,7 @@ body.studio { background: #f4f0e6; min-height: 100vh; }
 /* Editor head */
 .editor-head { align-items: flex-end; }
 .title-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.title-input { font-family: var(--font-head); font-size: 44px; line-height: 1.1; color: var(--espresso); background: transparent; border: 1px solid transparent; border-radius: var(--radius); padding: 0 6px; margin-left: -7px; width: min(560px, 100%); }
+.title-input { font-family: var(--font-head); font-size: 44px; line-height: 1.1; color: var(--espresso); background: transparent; border: 1px solid transparent; border-radius: var(--radius); padding: 0 6px; margin-left: -7px; width: min(560px, 100%); display: block; }
 .title-input:hover { border-color: var(--line); }
 .title-input:focus { outline: 2px solid var(--tan); background: #fff; }
 .mini-card { display: flex; gap: 12px; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
@@ -280,7 +280,7 @@ body.studio { background: #f4f0e6; min-height: 100vh; }
 
 a.item { text-decoration: none; }
 a.item h3 { text-decoration: none; }
-.proj-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.proj-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 0; }
 @media (max-width: 860px) {
   .editor, .sr, .share { grid-template-columns: minmax(0, 1fr); }
   .page-head .actions { width: 100%; }
