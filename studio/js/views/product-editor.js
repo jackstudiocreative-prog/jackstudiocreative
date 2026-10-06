@@ -493,7 +493,7 @@ export function mountProductEditor(el, { project: p, onChange }) {
         const name = $('#np-name').value.trim();
         if (!name) throw new Error('Enter the new product name, or choose an existing product');
         const id = uniqueId(slugify(name) || 'product', new Set(library.products.map((x) => x.id)));
-        const product = { id, name, series: $('#np-series').value.trim(), price: '', description: $('#np-desc').value.trim(), image: '' };
+        const product = { id, name, series: $('#np-series').value.trim(), price: '', description: $('#np-desc').value.trim(), image: '', updatedAt: new Date().toISOString() };
         pending.newProduct = product;
         extraUpdates.push(libraryUpdate(product));
         d.productId = id;

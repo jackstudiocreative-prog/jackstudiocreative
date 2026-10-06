@@ -506,3 +506,56 @@ a.item h3 { text-decoration: none; }
   .pj-sort { flex: 1 1 100%; }
   .pj-sort .select { flex: 1; }
 }
+
+/* ===== Product Library (studio/js/views/library.js) ===== */
+.lib-head { align-items: flex-start; margin-bottom: 18px; }
+.lib-head h1 { font-size: 60px; }
+.lib-head .btn { min-height: 52px; padding: 0 28px; font-size: 15px; font-weight: 600; }
+.lib-head + .tabs { margin-top: 0; }
+.tabs a { padding: 12px 18px; font-size: 14px; }
+.lib-tools { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.lib-tools .pj-search { flex: 1 1 300px; max-width: 520px; }
+.lib-tools .select { width: auto; min-width: 190px; min-height: 48px; font-size: 15px; }
+.lib-view { display: flex; margin-left: auto; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #fff; }
+.lib-view button { display: grid; place-items: center; width: 56px; height: 46px; border: 0; background: none; color: var(--espresso); cursor: pointer; }
+.lib-view button + button { border-left: 1px solid var(--line); }
+.lib-view button[aria-pressed="true"] { background: rgba(195, 130, 57, 0.18); color: #7a4a14; box-shadow: inset 0 0 0 1px var(--tan); }
+.lib-count { margin: 0 0 0 16px; font-size: 15px; color: var(--olive); white-space: nowrap; }
+
+.lib-table { background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 1px 2px rgba(43, 33, 28, 0.04); }
+.lib-row { display: grid; grid-template-columns: minmax(280px, 2.1fr) minmax(110px, 1fr) minmax(130px, 1.1fr) minmax(120px, 1fr) auto; gap: 16px; align-items: center; padding: 14px 24px; font-size: 15px; color: var(--espresso); }
+.lib-row + .lib-row { border-top: 1px solid var(--line); }
+.lib-row--head { padding-top: 22px; padding-bottom: 16px; background: var(--ivory); border-radius: 8px 8px 0 0; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.lib-row--head > :last-child { min-width: 168px; }
+.lib-product { display: flex; align-items: center; gap: 28px; min-width: 0; }
+.lib-product h3 { font-size: 26px; overflow-wrap: anywhere; }
+.lib-product h3 a, .lib-product .sku { text-decoration: none; }
+.lib-product .sku { display: inline-block; margin-top: 6px; }
+.lib-thumb { position: relative; flex: 0 0 auto; display: block; width: 104px; height: 104px; border-radius: 6px; overflow: hidden; background: #f4f0e6; }
+.lib-thumb img, .lib-card-img img { width: 100%; height: 100%; object-fit: cover; }
+.lib-thumb .ws-noimg { font-size: 12px; }
+.lib-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 168px; }
+.lib-actions .btn { min-height: 44px; font-size: 14px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.lib-menu { position: relative; top: auto; right: auto; }
+.lib-menu summary { width: 44px; height: 44px; background: #f4f0e6; font-size: 22px; letter-spacing: 0; }
+.pj-card .lib-menu { position: absolute; top: 14px; right: 14px; }
+.pj-card .lib-menu summary { width: 36px; height: 36px; background: #fff; }
+.lib-card-img { aspect-ratio: 1; }
+
+@media (max-width: 980px) {
+  .lib-head h1 { font-size: 44px; }
+  .lib-view { margin-left: 0; }
+  .lib-row--head { display: none; }
+  .lib-table { border: 0; background: none; box-shadow: none; display: grid; gap: 12px; }
+  .lib-row, .lib-row + .lib-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 16px; padding: 14px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+  .lib-product, .lib-actions { grid-column: 1 / -1; }
+  .lib-product { gap: 16px; }
+  .lib-thumb { width: 72px; height: 72px; }
+  .lib-row > [data-label]::before { content: attr(data-label); display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--olive); }
+  .lib-actions { justify-content: flex-start; min-width: 0; }
+}
+@media (max-width: 520px) {
+  .lib-head .actions, .lib-head .btn { width: 100%; }
+  .lib-tools .select { flex: 1 1 140px; min-width: 0; }
+  .lib-count { margin-left: auto; }
+}
