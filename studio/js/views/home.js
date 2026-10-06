@@ -1,7 +1,7 @@
 // Workspace (admins) / My Workspace (staff): counts, quick create, the projects and team access
 import { loadIndex, mediaURL } from '../store.js';
 import { esc, statusBadge, timeAgo, TYPE_LABEL } from '../ui.js';
-import { ICONS, projectMenu, newProjectButton, bindMenus, openURL } from './common.js';
+import { ICONS, projectMenu, newProjectButton, bindMenus, bindDelete, openURL } from './common.js';
 
 const SHOWN = 6; // projects listed here; the rest are on the Projects page
 
@@ -33,7 +33,7 @@ function createCard(type, cover) {
     </article>`;
 }
 
-function projectCard(p) {
+function projectCard(p, user) {
   const open = openURL(p);
   return `
     <li class="ws-card ws-card--project" data-type="${esc(p.type)}" data-status="${esc(p.status)}">
@@ -46,11 +46,11 @@ function projectCard(p) {
         <div class="ws-meta"><span>${esc(p.updatedBy || '')} · ${timeAgo(p.updatedAt)}</span></div>
         <a class="btn" href="${open}">Open project <span aria-hidden="true">→</span></a>
       </div>
-      ${projectMenu(p)}
+      ${projectMenu(p, user)}
     </li>`;
 }
 
-export async function render(el, { user }) {
+export async function render(el, { user, go, saved }) {
   const index = await loadIndex();
   const all = index.projects;
   const isAdmin = user.role === 'admin';
@@ -92,7 +92,7 @@ export async function render(el, { user }) {
           ${FILTERS.map(([v, l], i) => `<button type="button" data-filter="${v}" aria-pressed="${i === 0}">${l}</button>`).join('')}
         </div>
       </div>
-      <ul class="ws-grid" id="ws-list">${list.map(projectCard).join('')}</ul>
+      <ul class="ws-grid" id="ws-list">${list.map((p) => projectCard(p, user)).join('')}</ul>
       <div class="empty" id="ws-empty" hidden></div>
       <p class="ws-more" id="ws-more" hidden><a href="#/projects">All projects →</a></p>
     </section>
@@ -123,7 +123,8 @@ export async function render(el, { user }) {
   $('.ws-filters').addEventListener('click', (e) => { const b = e.target.closest('[data-filter]'); if (b) applyFilter(b.dataset.filter); });
   applyFilter('all');
 
-  const unbind = bindMenus(el);
+  const unbindMenus = bindMenus(el);
+  const unbindDelete = bindDelete(el, { saved, onDeleted: () => go('#/') }); // reload the counts and the list
 
-  return { destroy: unbind };
+  return { destroy() { unbindMenus(); unbindDelete(); } };
 }

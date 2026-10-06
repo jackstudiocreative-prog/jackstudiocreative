@@ -394,6 +394,9 @@ a.item h3 { text-decoration: none; }
 .ws-menu-list { position: absolute; top: 44px; right: 0; z-index: 10; display: grid; min-width: 190px; padding: 6px; background: #fff; border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 8px 24px rgba(43, 33, 28, 0.18); }
 .ws-menu-list a { padding: 9px 12px; border-radius: var(--radius); font-size: 14px; color: var(--espresso); text-decoration: none; white-space: nowrap; }
 .ws-menu-list a:hover { background: rgba(64, 20, 16, 0.06); }
+.ws-menu-danger { margin-top: 6px; padding: 9px 12px; border: 0; border-top: 1px solid var(--line); border-radius: 0 0 var(--radius) var(--radius); background: none; color: #a3341f; font: 400 14px/1.6 var(--font-body); text-align: left; cursor: pointer; }
+.ws-menu-danger:hover { background: rgba(163, 52, 31, 0.06); }
+.ws-menu-danger:disabled { opacity: 0.6; cursor: default; }
 
 /* All / Product 360° / Showroom / Drafts */
 .ws-filters { display: flex; gap: 6px; flex-wrap: wrap; }

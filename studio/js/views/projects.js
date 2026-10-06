@@ -1,7 +1,7 @@
 // Projects — every project, with filters down the side, search, sorting, and New Project
 import { loadIndex } from '../store.js';
 import { esc } from '../ui.js';
-import { ICONS, projectCard, newProjectButton, bindMenus } from './common.js';
+import { ICONS, projectCard, newProjectButton, bindMenus, bindDelete } from './common.js';
 
 const SORTS = {
   updated: ['Recently updated', (a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '')],
@@ -9,7 +9,7 @@ const SORTS = {
   name: ['Name A–Z', (a, b) => a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' })],
 };
 
-export async function render(el, { user, param }) {
+export async function render(el, { user, param, go, saved }) {
   const index = await loadIndex();
   const all = index.projects;
   const n = (test) => all.filter(test).length;
@@ -64,7 +64,7 @@ export async function render(el, { user, param }) {
     el.querySelectorAll('[data-type]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.type === state.type)));
     el.querySelectorAll('[data-status]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.status === state.status)));
     $('#count').textContent = `${list.length} of ${all.length} project${all.length === 1 ? '' : 's'}`;
-    $('#list').innerHTML = list.map(projectCard).join('');
+    $('#list').innerHTML = list.map((p) => projectCard(p, user)).join('');
     $('#empty').hidden = list.length > 0;
     if (!list.length) $('#empty').innerHTML = all.length ? 'No projects match these filters.' : 'No projects yet. Press <b>+ New Project</b> to start.';
   };
@@ -78,12 +78,13 @@ export async function render(el, { user, param }) {
   ['#q', '#sort', '#mine'].forEach((s) => $(s).addEventListener('input', draw));
   draw();
 
-  const unbind = bindMenus(el);
+  const unbindMenus = bindMenus(el);
+  const unbindDelete = bindDelete(el, { saved, onDeleted: () => go('#/projects') }); // reload the list and the counts
   if (param === 'new') { // arriving from a "New Project" link elsewhere: show the type menu straight away
     $('.np').open = true;
     $('.np summary').focus();
   }
-  return { destroy: unbind };
+  return { destroy() { unbindMenus(); unbindDelete(); } };
 }
 
 export { esc };
