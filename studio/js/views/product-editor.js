@@ -4,7 +4,8 @@ import { loadLibrary, libraryUpdate, mediaURL } from '../store.js';
 import { photosToFrames, videoToFrames, isVideo } from '../media-tools.js';
 import { SpinViewer } from '../../../assets/js/spin-viewer.js';
 import { spinAction } from '../../../assets/js/data.js';
-import { SERIES } from '../config.js';
+import { SERIES, SITE_BASE } from '../config.js';
+import qrcode from '../../../assets/vendor/qrcode/qrcode.mjs';
 import { esc, toast, slugify, uniqueId } from '../ui.js';
 
 const MODEL_VIEWER = new URL('../../../assets/vendor/model-viewer/model-viewer.min.js', import.meta.url).href;
@@ -41,6 +42,8 @@ export function mountProductEditor(el, { project: p, onChange }) {
             <span>JPG · PNG · WebP · MP4 · MOV</span>
             <input type="file" id="frames-input" accept="image/*,video/*" multiple hidden>
           </label>
+          <p class="hint phone-line"><button class="link-btn" type="button" data-phone="spin">Shoot with a phone instead</button></p>
+          <div class="phone-box" data-phone-box="spin" hidden></div>
           <div id="video-opts" hidden style="margin-top:14px">
             <div class="row">
               <div class="field">
@@ -76,6 +79,8 @@ export function mountProductEditor(el, { project: p, onChange }) {
             <span>First photo closed · last photo fully open</span>
             <input type="file" id="a-input" accept="image/*,video/*" multiple hidden>
           </label>
+          <p class="hint phone-line"><button class="link-btn" type="button" data-phone="action">Shoot with a phone instead</button></p>
+          <div class="phone-box" data-phone-box="action" hidden></div>
           <div id="a-video-opts" hidden style="margin-top:14px">
             <div class="row">
               <div class="field">
@@ -429,6 +434,23 @@ export function mountProductEditor(el, { project: p, onChange }) {
     applyAction();
   });
 
+  /* ---- shoot with a phone: a QR code that opens the guided capture page for this project ---- */
+  el.querySelectorAll('[data-phone]').forEach((btn) => btn.addEventListener('click', () => {
+    const kind = btn.dataset.phone;
+    const box = el.querySelector(`[data-phone-box="${kind}"]`);
+    box.hidden = !box.hidden;
+    if (box.hidden || box.childElementCount) return;
+    const url = `${SITE_BASE}/capture/product.html?project=${encodeURIComponent(p.id)}&shoot=${kind}`;
+    const text = document.createElement('div');
+    text.innerHTML = `<b>Scan this with the phone’s camera</b>
+      <span>It opens the camera with live guides: a frame, a ghost of the last photo and a level. ${kind === 'spin'
+        ? 'Shoot one full turn'
+        : 'Shoot the product opening, step by step'}, then save to this project.</span>
+      <span>The phone must be signed in to the Studio. Save your changes here first, and reload this page after saving on the phone.</span>
+      <a href="${esc(url)}" target="_blank" rel="noopener">Open on this device ↗</a>`;
+    box.append(qrCanvas(url), text);
+  }));
+
   /* ---- 3D model ---- */
   $('#f-glb').addEventListener('change', (e) => {
     const f = e.target.files[0];
@@ -524,6 +546,24 @@ export function mountProductEditor(el, { project: p, onChange }) {
       if (pending.modelUrl) URL.revokeObjectURL(pending.modelUrl);
     },
   };
+}
+
+/** QR code in brand colours (dark espresso on white keeps it scannable). */
+function qrCanvas(url) {
+  const qr = qrcode(0, 'M');
+  qr.addData(url);
+  qr.make();
+  const n = qr.getModuleCount(), cell = 6, quiet = 4, size = (n + quiet * 2) * cell;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = size;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#401410';
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
+  cv.setAttribute('role', 'img');
+  cv.setAttribute('aria-label', `QR code for ${url}`);
+  return cv;
 }
 
 function loadModelViewer() {

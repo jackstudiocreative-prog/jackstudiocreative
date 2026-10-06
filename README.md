@@ -5,6 +5,7 @@
 - **Public site:** https://jackstudiocreative-prog.github.io/jackstudiocreative/
 - **Studio (team workspace):** https://jackstudiocreative-prog.github.io/jackstudiocreative/studio/
 - **Phone 360° capture:** https://jackstudiocreative-prog.github.io/jackstudiocreative/capture/
+- **Phone product capture:** https://jackstudiocreative-prog.github.io/jackstudiocreative/capture/product.html
 
 ## How it works
 
@@ -40,6 +41,7 @@ Login ─┬─ failed → back to the home page
 
 - **Product 360°:** upload 24–72 turntable photos, or a video of one full turn (frames are extracted automatically). Optional 3D model: Blender → glTF Binary (.glb), plus .usdz for iPhone AR.
 - **Open / close (optional, in a Product 360° project):** show a zip, flap or lid opening. With the camera and product still, open it a little at a time and take a photo at each step (8–30 photos), or film it. Upload them under **Open / close**, turn the preview to the angle they were taken from and press **Use the angle shown above**, then **Place hotspot** on the part that opens. Customers press the hotspot to play it, and again to close it.
+- **Shoot a product with a phone:** open `/capture/product.html` (or scan the QR code under **Shoot with a phone instead** in a product project). Choose **360° turn** or **Open / close**, and **Tap for each photo** (hand-turned turntable) or **Automatic** (electric turntable or a timer). The live guides are a square frame, a faint ghost of the last photo, a level and a ring that fills as you go; the page warns if the phone moves. Signed-in team members save straight into a project as a draft; otherwise download the photos as a zip.
 - **Showroom:** upload 2:1 panoramas from a 360° camera, or capture one with a normal phone at `/capture/` (it stitches on the phone and can save straight to the Asset Library). Then click on the panorama to place hotspots: links to other scenes, products, or info.
 - **Preview** shows the saved draft; **Publish** makes it public. Share via link, QR code, or the Shopify embed code (paste into a *Custom liquid* section).
 
@@ -59,7 +61,7 @@ Login ─┬─ failed → back to the home page
 ```
 index.html · showroom.html · product.html   public pages
 studio/                                      the Studio (team workspace)
-capture/                                     phone 360° capture + stitching
+capture/                                     phone 360° capture + stitching; product.html = guided product photos
 data/index.json                              project list (rebuilt on every save)
 data/projects/<id>.json                      each project: draft + published version
 data/library.json                            product library
