@@ -1,6 +1,19 @@
 {
-  "updatedAt": "2026-10-06T04:32:08.959Z",
+  "updatedAt": "2026-10-06T04:32:30.065Z",
   "projects": [
+    {
+      "id": "bag-test",
+      "type": "product",
+      "title": "bag test",
+      "status": "draft",
+      "createdBy": "jackstudiocreative-prog",
+      "updatedBy": "jackstudiocreative-prog",
+      "updatedAt": "2026-10-06T04:32:25.857Z",
+      "publishedAt": null,
+      "cover": "",
+      "productId": null,
+      "published": null
+    },
     {
       "id": "testing",
       "type": "showroom",
