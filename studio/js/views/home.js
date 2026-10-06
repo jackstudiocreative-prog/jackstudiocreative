@@ -23,6 +23,7 @@ export async function render(el, { user }) {
       <li><a href="#/new/product"><b>Product 360°</b><span>Turn photos or a turntable video into a 360° product view</span></a></li>
       <li><a href="#/new/showroom"><b>Showroom</b><span>Build a walk-through from 360° panoramas with hotspots</span></a></li>
       <li><a href="../capture/" target="_blank" rel="noopener"><b>Capture with phone</b><span>Shoot a 360° panorama with a normal phone</span></a></li>
+      <li><a href="../capture/product.html" target="_blank" rel="noopener"><b>Shoot a product</b><span>Take the 360° turn or the open / close photos with a phone and live guides</span></a></li>
       <li><a href="#/library"><b>Product Library</b><span>Names, series and descriptions used across projects</span></a></li>
     </ul>
 
