@@ -1,6 +1,6 @@
 // Product 360° page — a published product project: image-sequence spin and/or 3D model (GLB) with AR
 import { SpinViewer } from './spin-viewer.js';
-import { getIndex, getProject, getLibraryProduct, versionOf, isPreview, spinFrames, siteURL, applyEmbedMode, escapeHTML } from './data.js';
+import { getIndex, getProject, getLibraryProduct, versionOf, isPreview, spinFrames, spinAction, siteURL, applyEmbedMode, escapeHTML } from './data.js';
 
 const MODEL_VIEWER_SRC = new URL('../vendor/model-viewer/model-viewer.min.js', import.meta.url).href;
 
@@ -13,11 +13,13 @@ const info = document.getElementById('product-info');
 let spin = null;
 
 function showSpin(p) {
+  spin?.destroy();
   stage.innerHTML = '';
-  spin = new SpinViewer(stage, spinFrames(p.spin), { label: `${p.name} 360° view`, reverse: p.spin.reverse });
+  spin = new SpinViewer(stage, spinFrames(p.spin), { label: `${p.name} 360° view`, reverse: p.spin.reverse, action: spinAction(p.action) });
 }
 
 async function showModel(p) {
+  spin?.destroy(); // stops a running open / close animation
   stage.innerHTML = '';
   spin = null;
   if (!customElements.get('model-viewer')) {
@@ -79,7 +81,7 @@ async function init() {
   }
   if (isPreview()) document.body.classList.add('is-preview');
   const lib = data.productId ? await getLibraryProduct(data.productId) : null;
-  const p = { name: lib?.name || project.title, series: lib?.series, price: lib?.price, description: lib?.description, spin: data.spin, model: data.model };
+  const p = { name: lib?.name || project.title, series: lib?.series, price: lib?.price, description: lib?.description, spin: data.spin, model: data.model, action: data.action };
   renderInfo(p);
   const first = renderTabs(p);
   if (first === 'spin') showSpin(p);

@@ -1,7 +1,9 @@
-// Product 360° editor: multi-angle photos or turntable video → spin; optional 3D model; linked library product
+// Product 360° editor: multi-angle photos or turntable video → spin; optional open / close sequence with a hotspot;
+// optional 3D model; linked library product
 import { loadLibrary, libraryUpdate, mediaURL } from '../store.js';
 import { photosToFrames, videoToFrames, isVideo } from '../media-tools.js';
 import { SpinViewer } from '../../../assets/js/spin-viewer.js';
+import { spinAction } from '../../../assets/js/data.js';
 import { SERIES } from '../config.js';
 import { esc, toast, slugify, uniqueId } from '../ui.js';
 
@@ -10,10 +12,17 @@ const MODEL_VIEWER = new URL('../../../assets/vendor/model-viewer/model-viewer.m
 const framesOf = (spin) => (spin ? Array.from({ length: spin.count }, (_, i) =>
   mediaURL(`${spin.folder}/${spin.pattern.replace('{n}', String(i + 1).padStart(spin.pad || 0, '0'))}`)) : []);
 
+// Open / close action: where it starts, where its hotspot sits and what it says (see spin-viewer.js)
+const ACTION_DEFAULTS = { frame: 1, x: 0.5, y: 0.5, span: 2, label: '', closeLabel: '' };
+const SPANS = [[0, 'Only at this exact angle'], [1, 'Within 1 photo of this angle'], [2, 'Within 2 photos of this angle'], [3, 'Within 3 photos of this angle'], [99, 'At every angle']];
+
 export function mountProductEditor(el, { project: p, onChange }) {
   const d = p.draft;
-  const pending = { frames: null, frameUrls: [], glb: null, usdz: null, modelUrl: null, newProduct: null };
+  const pending = { frames: null, frameUrls: [], action: null, actionUrls: [], glb: null, usdz: null, modelUrl: null, newProduct: null };
   let viewer = null, mode = 'spin', busy = false, videoFile = null, library = { products: [] };
+  let actionVideo = null, placing = false, lastIndex = 0;
+  const act = { ...ACTION_DEFAULTS };
+  if (d.action) Object.keys(ACTION_DEFAULTS).forEach((k) => { if (d.action[k] != null) act[k] = d.action[k]; });
 
   el.innerHTML = `
     <div class="editor">
@@ -58,6 +67,59 @@ export function mountProductEditor(el, { project: p, onChange }) {
           <div class="strip" id="strip"></div>
           <label class="check" style="margin-top:12px"><input type="checkbox" id="reverse" ${d.spin?.reverse ? 'checked' : ''}> Reverse rotation direction</label>
         </section>
+
+        <section class="panel">
+          <h2>Open / close <span class="sub-inline">optional</span></h2>
+          <p class="sub">Show how the product opens — a zip, a flap, a lid. Keep the camera and the product still, open it a little at a time and take a photo at each step (8–30 photos, ordered by file name). A video of it opening works too. Customers press a hotspot on the product to play it.</p>
+          <label class="drop" id="a-drop">
+            <strong>Drop the opening photos or a video here, or click to choose</strong>
+            <span>First photo closed · last photo fully open</span>
+            <input type="file" id="a-input" accept="image/*,video/*" multiple hidden>
+          </label>
+          <div id="a-video-opts" hidden style="margin-top:14px">
+            <div class="row">
+              <div class="field">
+                <label for="a-count">Photos to extract</label>
+                <select class="select" id="a-count">
+                  <option value="12">12 (lighter)</option><option value="20" selected>20 (recommended)</option><option value="30">30 (smoothest)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Opening (seconds)</label>
+                <div class="inline">
+                  <input class="input" id="a-start" type="number" min="0" step="0.1" value="0" style="width:90px" aria-label="Start second">
+                  <span>to</span>
+                  <input class="input" id="a-end" type="number" min="0" step="0.1" style="width:90px" aria-label="End second">
+                </div>
+                <span class="hint" id="a-duration"></span>
+              </div>
+            </div>
+            <button class="btn btn--sm" type="button" id="a-extract">Create from video</button>
+          </div>
+          <div class="progress" id="a-progress" hidden><i></i></div>
+          <div class="status" id="a-status" aria-live="polite"></div>
+          <div class="strip" id="a-strip"></div>
+          <div id="a-settings" hidden>
+            <div class="field" style="margin-top:14px">
+              <span class="label">Angle and hotspot</span>
+              <div class="inline">
+                <button class="btn btn--ghost btn--sm" type="button" id="a-angle">Use the angle shown above</button>
+                <button class="btn btn--sm" type="button" id="a-place">Place hotspot</button>
+              </div>
+              <span class="hint" id="a-where"></span>
+              <span class="hint">Turn the preview to the angle the opening photos were taken from, press “Use the angle shown above”, then place the hotspot on the part that opens.</span>
+            </div>
+            <div class="row">
+              <div class="field"><label for="a-label">Hotspot label</label><input class="input" id="a-label" maxlength="24" placeholder="Open" value="${esc(act.label)}"></div>
+              <div class="field"><label for="a-close">Label when open</label><input class="input" id="a-close" maxlength="24" placeholder="Close" value="${esc(act.closeLabel)}"></div>
+            </div>
+            <div class="field">
+              <label for="a-span">Show the hotspot</label>
+              <select class="select" id="a-span">${SPANS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select>
+            </div>
+            <button class="btn btn--danger btn--sm" type="button" id="a-remove">Remove open / close</button>
+          </div>
+        </section>
       </div>
 
       <div>
@@ -93,10 +155,13 @@ export function mountProductEditor(el, { project: p, onChange }) {
   const $ = (s) => el.querySelector(s);
   const stage = $('#stage');
   const status = (t) => { $('#status').textContent = t; };
-  const progress = (v) => {
-    $('#progress').hidden = v == null;
-    if (v != null) $('#progress').firstElementChild.style.width = `${Math.round(v * 100)}%`;
+  const bar = (sel) => (v) => {
+    $(sel).hidden = v == null;
+    if (v != null) $(sel).firstElementChild.style.width = `${Math.round(v * 100)}%`;
   };
+  const progress = bar('#progress');
+  const actionProgress = bar('#a-progress');
+  const actionStatus = (t) => { $('#a-status').textContent = t; };
 
   /* ---- product (library) ---- */
   function renderProductSelect() {
@@ -125,14 +190,25 @@ export function mountProductEditor(el, { project: p, onChange }) {
 
   /* ---- preview ---- */
   const currentFrames = () => (pending.frameUrls.length ? pending.frameUrls : framesOf(d.spin));
+  const currentActionFrames = () => (pending.actionUrls.length ? pending.actionUrls : spinAction(d.action, framesOf)?.frames || []);
+  const actionCfg = () => ({
+    frame: act.frame, x: act.x, y: act.y, span: act.span,
+    ...(act.label ? { label: act.label } : {}), ...(act.closeLabel ? { closeLabel: act.closeLabel } : {}),
+  });
+  const previewAction = () => {
+    const frames = currentActionFrames();
+    return frames.length >= 2 ? { frames, ...actionCfg() } : null;
+  };
   function showPreview() {
+    stopPlacing();
+    if (viewer instanceof SpinViewer) lastIndex = viewer.index;
     viewer?.destroy?.();
     viewer = null;
     stage.innerHTML = '';
     if (mode === 'spin') {
       const frames = currentFrames();
       if (!frames.length) { stage.innerHTML = '<div class="ph">Add photos or a video to see the 360° preview</div>'; return; }
-      viewer = new SpinViewer(stage, frames, { reverse: $('#reverse').checked, label: p.title });
+      viewer = new SpinViewer(stage, frames, { reverse: $('#reverse').checked, label: p.title, action: previewAction(), startIndex: lastIndex });
     } else {
       const src = pending.modelUrl || (d.model?.glb ? mediaURL(d.model.glb) : '');
       if (!src) { stage.innerHTML = '<div class="ph">Upload a .glb file to see the 3D preview</div>'; return; }
@@ -209,6 +285,150 @@ export function mountProductEditor(el, { project: p, onChange }) {
     onChange();
   });
 
+  /* ---- open / close action ---- */
+  /** Writes the settings into the draft (once the photos are saved there) and refreshes the panel and preview. */
+  function applyAction({ preview = true } = {}) {
+    if (d.action) {
+      const { folder, pattern, count, pad } = d.action;
+      d.action = { folder, pattern, count, pad, ...actionCfg() };
+    }
+    renderAction();
+    if (preview) showPreview();
+    onChange();
+  }
+  function renderAction() {
+    const frames = currentActionFrames();
+    const has = frames.length >= 2;
+    $('#a-settings').hidden = !has;
+    const step = Math.max(1, Math.floor(frames.length / 24));
+    $('#a-strip').innerHTML = frames.filter((_, i) => i % step === 0).map((src) => `<img src="${esc(src)}" alt="">`).join('');
+    if (!has) return;
+    const total = currentFrames().length;
+    $('#a-where').textContent = `Opens from photo ${total ? `${Math.min(act.frame, total)} of ${total}` : act.frame} · hotspot ${Math.round(act.x * 100)}% across, ${Math.round(act.y * 100)}% down`;
+    $('#a-span').value = String(SPANS.some(([v]) => v === act.span) ? act.span : 2);
+  }
+  function setPendingAction(blobs) {
+    const first = !currentActionFrames().length;
+    pending.actionUrls.forEach(URL.revokeObjectURL);
+    pending.action = blobs;
+    pending.actionUrls = blobs.map((b) => URL.createObjectURL(b));
+    // a new sequence starts from the angle the preview is showing, until the editor says otherwise
+    if (first && viewer instanceof SpinViewer && mode === 'spin') act.frame = viewer.index + 1;
+    if (mode !== 'spin') mode = 'spin';
+    $('#tabs').querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-selected', b.dataset.mode === mode));
+    actionStatus(`${blobs.length} opening photos ready · press Save draft to upload`);
+    applyAction();
+  }
+  async function handleActionFiles(files) {
+    if (busy || !files.length) return;
+    const video = [...files].find(isVideo);
+    if (video) {
+      actionVideo = video;
+      $('#a-video-opts').hidden = false;
+      const probe = document.createElement('video');
+      probe.preload = 'metadata';
+      probe.src = URL.createObjectURL(video);
+      probe.onloadedmetadata = () => {
+        $('#a-end').value = probe.duration.toFixed(1);
+        $('#a-duration').textContent = `Video length ${probe.duration.toFixed(1)} s`;
+        URL.revokeObjectURL(probe.src);
+      };
+      actionStatus(`Video selected: ${video.name}. Set where the opening starts and ends, then press "Create from video".`);
+      return;
+    }
+    const images = [...files].filter((f) => f.type.startsWith('image/'));
+    if (images.length < 3) { toast('Use at least 3 photos to show the product opening', true); return; }
+    busy = true;
+    actionStatus(`Processing ${images.length} photos…`);
+    try { setPendingAction(await photosToFrames(images, { onProgress: actionProgress })); }
+    catch (err) { toast(err.message, true); actionStatus(''); }
+    finally { busy = false; actionProgress(null); }
+  }
+  const actionDrop = $('#a-drop');
+  $('#a-input').addEventListener('change', (e) => { handleActionFiles(e.target.files); e.target.value = ''; });
+  ['dragenter', 'dragover'].forEach((t) => actionDrop.addEventListener(t, (e) => { e.preventDefault(); actionDrop.classList.add('is-over'); }));
+  ['dragleave', 'drop'].forEach((t) => actionDrop.addEventListener(t, (e) => { e.preventDefault(); actionDrop.classList.remove('is-over'); }));
+  actionDrop.addEventListener('drop', (e) => handleActionFiles(e.dataTransfer.files));
+  $('#a-extract').addEventListener('click', async () => {
+    if (!actionVideo || busy) return;
+    busy = true;
+    const count = Number($('#a-count').value);
+    actionStatus(`Extracting ${count} photos…`);
+    try {
+      setPendingAction(await videoToFrames(actionVideo, {
+        count, inclusive: true, start: Number($('#a-start').value) || 0, end: Number($('#a-end').value) || null, onProgress: actionProgress,
+      }));
+    } catch (err) { toast(err.message, true); actionStatus(''); }
+    finally { busy = false; actionProgress(null); }
+  });
+
+  $('#a-angle').addEventListener('click', () => {
+    if (!(viewer instanceof SpinViewer)) { toast('Open the 360° Photos preview first', true); return; }
+    if (viewer.opened || viewer.playing) { toast('Close the product in the preview first', true); return; }
+    act.frame = viewer.index + 1;
+    applyAction();
+  });
+  $('#a-span').addEventListener('change', () => { act.span = Number($('#a-span').value); applyAction(); });
+  [['#a-label', 'label'], ['#a-close', 'closeLabel']].forEach(([sel, key]) => $(sel).addEventListener('input', () => {
+    act[key] = $(sel).value.trim();
+    if (viewer?.action) { // update the preview hotspot in place, without restarting the preview on every key
+      viewer.action.label = act.label || 'Open';
+      viewer.action.closeLabel = act.closeLabel || 'Close';
+      viewer.updateHotspot();
+    }
+    applyAction({ preview: false });
+  }));
+
+  // Placing the hotspot: the preview turns to the opening angle and the next click on the photo sets the position
+  function stopPlacing() {
+    if (!placing) return;
+    placing = false;
+    stage.classList.remove('is-placing');
+    viewer?.lock?.(false);
+    $('#a-place').textContent = 'Place hotspot';
+    actionStatus('');
+  }
+  $('#a-place').addEventListener('click', () => {
+    if (placing) { stopPlacing(); return; }
+    if (!currentFrames().length) { toast('Add the 360° photos first', true); return; }
+    mode = 'spin';
+    $('#tabs').querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-selected', b.dataset.mode === mode));
+    showPreview();
+    viewer.show(act.frame - 1);
+    viewer.lock(true);
+    placing = true;
+    stage.classList.add('is-placing');
+    $('#a-place').textContent = 'Cancel';
+    actionStatus('Click on the product in the preview, on the part that opens');
+    stage.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+  stage.addEventListener('click', (e) => {
+    if (!placing || !(viewer instanceof SpinViewer)) return;
+    const pt = viewer.pointToImage(e.clientX, e.clientY);
+    if (!pt) { toast('Click on the photo itself', true); return; }
+    act.x = pt.x;
+    act.y = pt.y;
+    stopPlacing();
+    applyAction();
+  });
+  const onKey = (e) => { if (e.key === 'Escape' && placing) stopPlacing(); };
+  document.addEventListener('keydown', onKey);
+
+  $('#a-remove').addEventListener('click', () => {
+    if (!confirm('Remove the open / close photos and hotspot from this project?')) return;
+    delete d.action;
+    pending.actionUrls.forEach(URL.revokeObjectURL);
+    pending.action = null;
+    pending.actionUrls = [];
+    actionVideo = null;
+    $('#a-video-opts').hidden = true;
+    Object.assign(act, ACTION_DEFAULTS);
+    $('#a-label').value = '';
+    $('#a-close').value = '';
+    actionStatus('Removed — press Save draft');
+    applyAction();
+  });
+
   /* ---- 3D model ---- */
   $('#f-glb').addEventListener('change', (e) => {
     const f = e.target.files[0];
@@ -234,9 +454,10 @@ export function mountProductEditor(el, { project: p, onChange }) {
 
   showPreview();
   renderStrip();
+  renderAction();
 
   return {
-    hasPending: () => Boolean(pending.frames || pending.glb || pending.usdz || pending.newProduct),
+    hasPending: () => Boolean(pending.frames || pending.action || pending.glb || pending.usdz || pending.newProduct),
     progress,
     ready() {
       if (!d.spin && !d.model) { toast('Add photos, a video or a 3D model before publishing', true); return false; }
@@ -262,6 +483,19 @@ export function mountProductEditor(el, { project: p, onChange }) {
         pending.frames.forEach((b, i) => put.push({ path: `${folder}/frame-${String(i + 1).padStart(pad, '0')}.jpg`, content: b }));
         d.spin = { folder, pattern: 'frame-{n}.jpg', count: pending.frames.length, pad, ...($('#reverse').checked ? { reverse: true } : {}) };
       }
+      if (pending.action || d.action) {
+        if (!d.spin) throw new Error('Add the 360° photos before the open / close photos');
+        act.frame = Math.min(Math.max(1, act.frame), d.spin.count); // the 360° photos may have been replaced by a shorter set
+      }
+      if (pending.action) {
+        const pad = Math.max(2, String(pending.action.length).length);
+        const folder = `media/products/${p.id}/action-${ts}`;
+        pending.action.forEach((b, i) => put.push({ path: `${folder}/frame-${String(i + 1).padStart(pad, '0')}.jpg`, content: b }));
+        d.action = { folder, pattern: 'frame-{n}.jpg', count: pending.action.length, pad, ...actionCfg() };
+      } else if (d.action) {
+        const { folder, pattern, count, pad } = d.action;
+        d.action = { folder, pattern, count, pad, ...actionCfg() };
+      }
       if (pending.glb) {
         const glb = `media/products/${p.id}/model-${ts}.glb`;
         put.push({ path: glb, content: pending.glb });
@@ -277,12 +511,16 @@ export function mountProductEditor(el, { project: p, onChange }) {
     },
     saved() {
       if (pending.newProduct) { library.products.push(pending.newProduct); pending.newProduct = null; renderProductSelect(); }
-      pending.frames = pending.glb = pending.usdz = null;
+      pending.frames = pending.action = pending.glb = pending.usdz = null;
       status('');
+      actionStatus('');
+      renderAction();
     },
     destroy() {
+      document.removeEventListener('keydown', onKey);
       viewer?.destroy?.();
       pending.frameUrls.forEach(URL.revokeObjectURL);
+      pending.actionUrls.forEach(URL.revokeObjectURL);
       if (pending.modelUrl) URL.revokeObjectURL(pending.modelUrl);
     },
   };

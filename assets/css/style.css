@@ -170,6 +170,20 @@ body.is-embed .viewer-stage { border: 0; }
 .spin.has-interacted .spin-hint { opacity: 0; }
 .spin-progress { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--tan); transition: width 0.2s; }
 
+/* Open / close hotspot on a product spin (the same marker as a showroom hotspot, as a button) */
+.spin-hs {
+  position: absolute; z-index: 2; transform: translate(-18px, -50%);
+  padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left;
+}
+.spin-hs--left { flex-direction: row-reverse; transform: translate(calc(-100% + 18px), -50%); }
+.spin-hs .hs-dot { animation: spin-hs-pulse 2.4s ease-out infinite; }
+.spin-hs.is-open .hs-dot { background: var(--espresso); color: var(--ivory); animation: none; }
+@keyframes spin-hs-pulse {
+  0%, 60%, 100% { box-shadow: 0 0 0 6px rgba(251, 248, 240, 0.28), 0 4px 12px rgba(43, 33, 28, 0.35); }
+  30% { box-shadow: 0 0 0 11px rgba(251, 248, 240, 0.12), 0 4px 12px rgba(43, 33, 28, 0.35); }
+}
+.spin.is-locked { cursor: crosshair; }
+
 .error-msg { padding: 40px 24px; text-align: center; color: var(--olive); }
 
 @media (max-width: 860px) {
@@ -182,6 +196,7 @@ body.is-embed .viewer-stage { border: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .drawer, .spin-hint, .spin-progress { transition: none; }
+  .spin-hs .hs-dot { animation: none; }
 }
 .showroom .error-msg { color: var(--ivory); }
 

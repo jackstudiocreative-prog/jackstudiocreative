@@ -67,6 +67,7 @@ body.studio { background: #f4f0e6; min-height: 100vh; }
 .preview-stage { position: relative; aspect-ratio: 1; background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .preview-stage .ph { position: absolute; inset: 0; display: grid; place-items: center; color: var(--olive); text-align: center; padding: 24px; font-size: 14px; }
 .preview-stage model-viewer { width: 100%; height: 100%; }
+.preview-stage.is-placing { outline: 3px solid var(--tan); outline-offset: -3px; } /* waiting for a click to place the open / close hotspot */
 .drop {
   display: grid; place-items: center; gap: 6px; text-align: center; padding: 22px 16px;
   border: 1.5px dashed rgba(64, 20, 16, 0.3); border-radius: 8px; background: #fff; cursor: pointer;

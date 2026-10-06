@@ -7,7 +7,10 @@
 //   media/…                    photos, panoramas, 3D models
 //
 // Project types
-//   product   draft = { productId, spin: { folder, pattern, count, pad, reverse? } | null, model: { glb, usdz?, poster? } | null }
+//   product   draft = { productId, spin: { folder, pattern, count, pad, reverse? } | null, model: { glb, usdz?, poster? } | null,
+//                       action?: { folder, pattern, count, pad, frame, x, y, span, label?, closeLabel? } }
+//             action = optional "open / close" photo sequence played from a hotspot on the spin (see spin-viewer.js):
+//             frame = spin frame (1-based) it starts from, x/y = hotspot position on the photo (0–1), span = frames either side it shows on
 //   showroom  draft = { startScene, scenes: [{ id, name, panorama, thumb, view: { yaw, pitch }, hotspots: [...] }] }
 //   hotspots: { type: 'scene', target, label } | { type: 'product', project, label } | { type: 'info', title, text }, each with yaw/pitch
 
@@ -42,6 +45,13 @@ export function spinFrames(spin) {
   if (!spin) return [];
   const { folder, pattern, count, pad = 0 } = spin;
   return Array.from({ length: count }, (_, i) => siteURL(`${folder}/${pattern.replace('{n}', String(i + 1).padStart(pad, '0'))}`));
+}
+
+/** A product's open / close sequence in the shape SpinViewer takes, or null. `frames` maps the stored photos to URLs. */
+export function spinAction(action, frames = spinFrames) {
+  if (!action || !action.folder || !(action.count >= 2)) return null;
+  const { frame, x, y, span, label, closeLabel } = action;
+  return { frames: frames(action), frame, x, y, span, label, closeLabel };
 }
 
 export function coverOf(type, data) {
