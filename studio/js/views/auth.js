@@ -1,19 +1,75 @@
 // Login & reset password (diagram: Login → Failed → Home page / Forgot password → Reset → Login)
-import { setToken, whoAmI } from '../github.js';
+// With staff accounts switched on, people sign in with a username and password;
+// signing in with a personal GitHub key stays available (the owner uses it).
+import { setToken, whoAmI, signIn } from '../github.js';
+import { publicServiceURL } from '../accounts.js';
 import { REPO } from '../config.js';
 import { esc } from '../ui.js';
 
 const NEW_KEY_URL = 'https://github.com/settings/tokens/new?scopes=repo&description=Jack%20Studio%20360%20Studio';
-
-export function render(el, { mode = 'login', message = '', onSignedIn }) {
-  if (mode === 'forgot') return renderForgot(el);
-
-  el.innerHTML = `
+const card = (inner) => `
     <form class="auth-card" id="login-form" novalidate>
       <a class="brand" href="../">JACK STUDIO <span>360°</span></a>
       <h1>Sign in</h1>
       <p class="sub">The internal workspace for creating 360° products and showrooms.</p>
+      ${inner}
+    </form>`;
+const foot = (message) => `
+      <label class="check"><input type="checkbox" id="remember" checked> Keep me signed in on this device</label>
+      <p class="error" id="login-error" role="alert">${esc(message)}</p>
+      <div class="auth-failed" id="failed" ${message ? '' : 'hidden'}>
+        <a href="../">← Back to home page</a>
+      </div>
+      <button class="btn" type="submit" id="submit">Sign in</button>`;
 
+export async function render(el, { mode = 'login', message = '', onSignedIn }) {
+  el.innerHTML = '<div class="auth-card"><a class="brand" href="../">JACK STUDIO <span>360°</span></a><p class="sub">Loading…</p></div>';
+  const service = await publicServiceURL(); // '' until an admin has switched on staff accounts
+  if (mode === 'forgot') return renderForgot(el, service);
+  if (service) renderAccount(el, { service, message, onSignedIn });
+  else renderKey(el, { service, message, onSignedIn });
+}
+
+/** Username + password, checked by the sign-in service. */
+function renderAccount(el, { service, message, onSignedIn }) {
+  el.innerHTML = card(`
+      <div class="field">
+        <label for="username">Username</label>
+        <input class="input" id="username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input class="input" id="password" type="password" autocomplete="current-password" required>
+      </div>
+      ${foot(message)}
+      <p class="auth-links"><a href="#/forgot">Forgot your password?</a> · <button class="link-btn" type="button" id="use-key">Use a GitHub key instead</button></p>`);
+
+  const $ = (s) => el.querySelector(s);
+  $('#use-key').addEventListener('click', () => renderKey(el, { service, message: '', onSignedIn }));
+  $('#username').focus();
+  $('#login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = $('#username').value.trim(), password = $('#password').value;
+    $('#login-error').textContent = '';
+    if (!username || !password) { $('#login-error').textContent = 'Enter your username and password.'; return; }
+    const btn = $('#submit');
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+    try {
+      onSignedIn(await signIn(service, username, password, $('#remember').checked));
+    } catch (err) {
+      $('#login-error').textContent = err.message;
+      $('#failed').hidden = false;
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+      $('#password').select();
+    }
+  });
+}
+
+/** A personal GitHub access key. */
+function renderKey(el, { service, message, onSignedIn }) {
+  el.innerHTML = card(`
       <div class="field">
         <label for="key">GitHub access key</label>
         <input class="input" id="key" type="password" autocomplete="current-password" spellcheck="false" placeholder="ghp_…" required>
@@ -28,17 +84,13 @@ export function render(el, { mode = 'login', message = '', onSignedIn }) {
           <li>Copy the key that starts with <code>ghp_</code> and paste it above.</li>
         </ol>
       </div>
-
-      <label class="check"><input type="checkbox" id="remember" checked> Keep me signed in on this device</label>
-      <p class="error" id="login-error" role="alert">${esc(message)}</p>
-      <div class="auth-failed" id="failed" ${message ? '' : 'hidden'}>
-        <a href="../">← Back to home page</a>
-      </div>
-      <button class="btn" type="submit" id="submit">Sign in</button>
-      <p class="auth-links"><a href="#/forgot">Forgot your password or key?</a></p>
-    </form>`;
+      ${foot(message)}
+      <p class="auth-links">${service
+        ? '<button class="link-btn" type="button" id="use-account">Sign in with a username and password</button>'
+        : '<a href="#/forgot">Forgot your password or key?</a>'}</p>`);
 
   const $ = (s) => el.querySelector(s);
+  $('#use-account')?.addEventListener('click', () => renderAccount(el, { service, message: '', onSignedIn }));
   $('#how').addEventListener('click', () => { $('#help').hidden = !$('#help').hidden; });
   $('#key').focus();
   $('#login-form').addEventListener('submit', async (e) => {
@@ -66,12 +118,23 @@ export function render(el, { mode = 'login', message = '', onSignedIn }) {
   });
 }
 
-function renderForgot(el) {
+function renderForgot(el, service) {
   el.innerHTML = `
     <div class="auth-card">
       <a class="brand" href="../">JACK STUDIO <span>360°</span></a>
       <h1>Reset access</h1>
-      <p class="sub">The Studio uses your GitHub account, so passwords and keys are managed on GitHub.</p>
+      ${service ? `
+      <p class="sub">Ask a Studio admin for a new password.</p>
+      <div class="help">
+        <p><b>Forgot your password?</b></p>
+        <ol>
+          <li>Tell an admin. They open <b>Team</b>, find your account and press <b>Reset password</b>.</li>
+          <li>Sign in with the new password they give you.</li>
+          <li>Then choose your own under your name at the top right → <b>Change password</b>.</li>
+        </ol>
+      </div>
+      <p class="sub" style="margin-top:6px">Signing in with a GitHub key instead? Passwords and keys are managed on GitHub:</p>`
+      : '<p class="sub">The Studio uses your GitHub account, so passwords and keys are managed on GitHub.</p>'}
       <div class="help">
         <p><b>Forgot your GitHub password?</b></p>
         <ol>

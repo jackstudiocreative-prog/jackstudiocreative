@@ -39,6 +39,27 @@ export async function render(el, { user, param, saved }) {
     return {};
   }
 
+  if (state === 'not-connected') {
+    // signed in with a Studio account: the sign-in service's GitHub App has to be installed on the photo repository too
+    body.innerHTML = `
+      <section class="panel narrow">
+        <h2>The photo library is not connected yet</h2>
+        <p class="sub">Staff accounts can use the photo library once the owner has connected it. This is done once, on GitHub:</p>
+        <ol class="sub">
+          <li>Sign in to GitHub as <b>${esc(REPO.owner)}</b> and open <a href="https://github.com/settings/installations" target="_blank" rel="noopener">Settings → Applications</a>.</li>
+          <li>Next to <b>Jack Studio 360 Sign-in</b> press <b>Configure</b>.</li>
+          <li>Under <b>Repository access</b>, add <b>${esc(PHOTOS_REPO)}</b> and press <b>Save</b>.</li>
+        </ol>
+        <p class="sub">No repository called ${esc(PHOTOS_REPO)}? Then the photo library has not been set up: the owner signs in to the Studio with their GitHub key and opens this page first.</p>
+        <button class="btn btn--ghost btn--sm" type="button" id="retry">Check again</button>
+      </section>`;
+    body.querySelector('#retry').addEventListener('click', (e) => busy(e.currentTarget, 'Checking…', async () => {
+      await photoLibraryState(user, true); // fetches a fresh key, which includes the photo library once it is connected
+      render(el, { user, param, saved });
+    }));
+    return {};
+  }
+
   if (state === 'no-access') {
     body.innerHTML = `
       <section class="panel narrow">

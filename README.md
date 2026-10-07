@@ -13,7 +13,7 @@ The site runs on GitHub Pages. The Studio uses this GitHub repository as its bac
 
 ```
 Login ─┬─ failed → back to the home page
-       ├─ forgot password → reset (GitHub password / new access key)
+       ├─ forgot password → reset (an admin resets it / GitHub password / new access key)
        └─ success → Workspace
               ├─ Projects
               ├─ New Project → Product 360° (photos / video / 3D)  ┐
@@ -26,11 +26,13 @@ Login ─┬─ failed → back to the home page
 
 ## Team access
 
-1. Every team member needs a free GitHub account.
-2. An admin invites them in **Studio → Team** (role **Staff** or **Admin**). GitHub emails the invitation.
-3. After accepting, they create an access key at
-   https://github.com/settings/tokens/new?scopes=repo&description=Jack%20Studio%20360%20Studio
-   (classic token, **repo** scope) and sign in to the Studio with it.
+There are two ways to sign in to the Studio.
+
+**Staff accounts (username + password).** An admin creates them in **Studio → Team → Staff accounts** and passes the sign-in details on; no GitHub account or email is needed. Admins can reset a password, switch an account off or delete it; people change their own password under their name at the top right. This needs the sign-in service in [`studio-service/`](studio-service/README.md), which the owner sets up once with the steps on the Team page.
+
+**GitHub key.** The owner — and anyone invited as a GitHub member in Team — signs in with a personal access key from
+https://github.com/settings/tokens/new?scopes=repo&description=Jack%20Studio%20360%20Studio
+(classic token, **repo** scope). The owner should keep using this: it works even if the sign-in service is down.
 
 | Role | Can do |
 |---|---|
@@ -65,6 +67,8 @@ capture/                                     phone 360° capture + stitching; pr
 data/index.json                              project list (rebuilt on every save)
 data/projects/<id>.json                      each project: draft + published version
 data/library.json                            product library
+data/studio.json                             Studio settings (address of the sign-in service)
+studio-service/                              sign-in service for staff accounts (runs on Vercel)
 media/                                       photos, panoramas, 3D models
 assets/                                      styles, scripts, fonts, open-source libraries
 ```

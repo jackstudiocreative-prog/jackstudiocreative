@@ -1,23 +1,45 @@
 // GitHub as the Studio's backend: sign-in, roles, reading files and atomic multi-file commits.
 // Every save is one commit; GitHub Pages then republishes the site automatically.
 // Two repositories are used: the public website (REPO) and a private photo library (PHOTOS_REPO).
+//
+// There are two ways to be signed in:
+//  · with a Studio account (username + password) — the sign-in service checks the password and
+//    hands out a GitHub key that works for one hour; it is fetched again when it runs out;
+//  · with a person's own GitHub access key (the owner, and anyone invited on GitHub).
 import { REPO, PHOTOS_REPO } from './config.js';
 
 const API = 'https://api.github.com';
 const TOKEN_KEY = 'js360-token';
+const SESSION_KEY = 'js360-session';
 
-let token = null;
+let token = null;   // a person's own GitHub key
+let session = null; // { url, token, user, remember } — a Studio account, signed in through the service at `url`
+let access = null;  // { token, exp, photos } — the one-hour GitHub key of that session (kept in memory only)
+let refreshing = null;
 try { token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY); } catch {}
+try { session = JSON.parse(localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY) || 'null'); } catch {}
+if (session && !(session.url && session.token)) session = null;
+if (session) token = null;
 
-export const hasToken = () => Boolean(token);
+export const hasToken = () => Boolean(token || session);
+/** 'account' (username + password), 'github' (own GitHub key) or null */
+export const signedInWith = () => (session ? 'account' : token ? 'github' : null);
 
+function forget() {
+  try { [TOKEN_KEY, SESSION_KEY].forEach((k) => { localStorage.removeItem(k); sessionStorage.removeItem(k); }); } catch {}
+}
+
+/** Sign in with a GitHub key, or sign out with setToken(null). */
 export function setToken(t, remember) {
-  token = t;
-  try {
-    localStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(TOKEN_KEY);
-    if (t) (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, t);
-  } catch {}
+  token = t; session = null; access = null;
+  forget();
+  try { if (t) (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, t); } catch {}
+}
+
+function setSession(s) {
+  session = s; token = null; access = null;
+  forget();
+  try { if (s) (s.remember ? localStorage : sessionStorage).setItem(SESSION_KEY, JSON.stringify(s)); } catch {}
 }
 
 export class GitHubError extends Error {
@@ -25,23 +47,89 @@ export class GitHubError extends Error {
 }
 export class ConflictError extends Error {}
 
-async function request(method, path, body, accept = 'application/vnd.github+json') {
+/* ---------------- the sign-in service (Studio accounts) ---------------- */
+
+let serviceURL = session?.url || '';
+/** Where the sign-in service lives. Needed before the owner, signed in with a GitHub key, can manage accounts. */
+export function useService(url) { serviceURL = session?.url || url || ''; }
+
+/** Calls the sign-in service as whoever is signed in. `url` overrides the saved address (used while setting up). */
+export async function service(path, { method = 'GET', body, url, anonymous = false } = {}) {
+  const base = url || serviceURL;
+  if (!base) throw new GitHubError('Staff accounts are not set up yet.', 0);
   let res;
   try {
-    res = await fetch(API + path, {
+    res = await fetch(`${base}/api/${path}`, {
       method,
       cache: 'no-store',
       headers: {
-        Accept: accept,
-        'X-GitHub-Api-Version': '2022-11-28',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(anonymous ? {} : session ? { Authorization: `Bearer ${session.token}` } : token ? { 'X-GitHub-Token': token } : {}),
         ...(body ? { 'Content-Type': 'application/json' } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new GitHubError('Cannot reach GitHub. Check your internet connection.', 0);
+    throw new GitHubError('Cannot reach the sign-in service. Check your internet connection and try again.', 0);
   }
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const err = new GitHubError(data?.error || `The sign-in service answered with an error (${res.status}).`, res.status);
+    err.code = data?.code;
+    throw err;
+  }
+  return data;
+}
+
+/** The GitHub key to use right now. For a Studio account it is fetched from the service and renewed before it runs out. */
+async function accessToken(renew = false) {
+  if (!session) return token;
+  if (!renew && access && access.exp - Date.now() > 2 * 60000) return access.token;
+  refreshing = refreshing || service('token', { method: 'POST' })
+    .then((t) => { access = { token: t.token, exp: Date.parse(t.expiresAt), photos: Boolean(t.photos) }; return access.token; })
+    .finally(() => { refreshing = null; });
+  return refreshing;
+}
+
+/** Signs in with a Studio account. */
+export async function signIn(url, username, password, remember) {
+  const r = await service('login', { method: 'POST', url, anonymous: true, body: { username, password, remember: Boolean(remember) } });
+  setSession({ url, token: r.session, user: r.user, remember: Boolean(remember) });
+  serviceURL = url;
+  return r.user;
+}
+
+/** A signed-in account changes its own password; the other devices of that account are signed out. */
+export async function changePassword(current, next) {
+  const r = await service('password', { method: 'POST', body: { current, next } });
+  setSession({ ...session, token: r.session });
+}
+
+/** After an admin changed the password of the account they are signed in with. */
+export function keepSession(newToken) { if (session && newToken) setSession({ ...session, token: newToken }); }
+
+/* ---------------- requests to GitHub ---------------- */
+
+async function request(method, path, body, accept = 'application/vnd.github+json') {
+  const send = async (renew) => {
+    const key = await accessToken(renew);
+    try {
+      return await fetch(API + path, {
+        method,
+        cache: 'no-store',
+        headers: {
+          Accept: accept,
+          'X-GitHub-Api-Version': '2022-11-28',
+          ...(key ? { Authorization: `Bearer ${key}` } : {}),
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch {
+      throw new GitHubError('Cannot reach GitHub. Check your internet connection.', 0);
+    }
+  };
+  let res = await send(false);
+  if (res.status === 401 && session) res = await send(true); // the one-hour key ran out early — get a new one and try once more
   return res;
 }
 
@@ -221,6 +309,12 @@ export const { readText, readJSON, listFiles, commit } = site;
 
 /** Verifies the key and returns the user and their role in the website repository. */
 export async function whoAmI() {
+  if (session) {
+    // also checks that the account is still switched on
+    const { user } = await service('me');
+    setSession({ ...session, user });
+    return user;
+  }
   const user = await gh('GET', '/user');
   let repo;
   try { repo = await gh('GET', site.R); }
@@ -235,8 +329,15 @@ export async function whoAmI() {
 
 /* ---------------- Photo library repository ---------------- */
 
-/** 'ready' | 'missing' (not created yet) | 'no-access' (exists, but this account isn't a member yet) */
-export async function photoLibraryState(user) {
+/**
+ * 'ready' | 'missing' (not created yet) | 'no-access' (exists, but this account isn't a member yet)
+ * | 'not-connected' (Studio accounts can't reach it: the GitHub App isn't installed on the photo repository)
+ */
+export async function photoLibraryState(user, recheck = false) {
+  if (session) {
+    if (recheck) await accessToken(true); // the owner may just have connected it
+    return (await photos.info()) ? 'ready' : 'not-connected';
+  }
   const r = await photos.info();
   if (r) return r.permissions?.push ? 'ready' : 'no-access';
   // 404 means either "doesn't exist" or "exists but private to others"; only the owner can tell the difference
@@ -275,6 +376,21 @@ export async function syncPhotoAccess() {
     if (i.invitee?.login) tasks.push(photos.setMember(i.invitee.login, i.permissions === 'admin' ? 'admin' : 'staff').catch(() => null));
   }
   await Promise.all(tasks);
+}
+
+/* ---------------- Setting up Studio accounts (owner) ---------------- */
+
+/** GitHub hands over a new GitHub App's id and private key once, in exchange for the code it sent back. */
+export async function claimGitHubApp(code) {
+  let res;
+  try {
+    res = await fetch(`${API}/app-manifests/${encodeURIComponent(code)}/conversions`, { method: 'POST', headers: { Accept: 'application/vnd.github+json' } });
+  } catch {
+    throw new GitHubError('Cannot reach GitHub. Check your internet connection.', 0);
+  }
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.pem) throw new GitHubError(res.status === 404 ? 'GitHub no longer accepts that code (it works once, for an hour). Press the button to create the app again.' : data?.message || `GitHub error ${res.status}`, res.status);
+  return { id: data.id, slug: data.slug, name: data.name, pem: data.pem };
 }
 
 /* ---------------- Team (admin): applied to both repositories ---------------- */
