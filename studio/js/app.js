@@ -1,5 +1,5 @@
 // Studio shell: session, navigation, routing
-import { hasToken, setToken, whoAmI, siteStatus } from './github.js';
+import { hasToken, setToken, whoAmI, siteStatus, signedInWith } from './github.js';
 import { toast, esc } from './ui.js';
 import * as auth from './views/auth.js';
 import * as home from './views/home.js';
@@ -11,11 +11,12 @@ import * as photoLibrary from './views/photos.js';
 import * as assets from './views/assets.js';
 import * as publish from './views/publish.js';
 import * as team from './views/team.js';
+import * as account from './views/account.js';
 
 const $ = (id) => document.getElementById(id);
 const ROUTES = {
   '': ['home', home], projects: ['projects', projects], new: ['projects', newProject], project: ['projects', editor],
-  library: ['library', library], photos: ['library', photoLibrary], assets: ['assets', assets], publish: ['publish', publish], team: ['team', team],
+  library: ['library', library], photos: ['library', photoLibrary], assets: ['assets', assets], publish: ['publish', publish], team: ['team', team], account: ['account', account],
 };
 
 let user = null;
@@ -87,7 +88,9 @@ async function onSignedIn(u) {
   user = u;
   $('auth-view').hidden = true;
   $('app-view').hidden = false;
-  $('user-chip').innerHTML = `${u.avatar ? `<img src="${esc(u.avatar)}" alt="">` : ''}<span>${esc(u.name)}</span><span class="badge ${u.role === 'admin' ? '' : 'badge--muted'}">${u.role === 'admin' ? 'Admin' : 'Staff'}</span>`;
+  const chip = `${u.avatar ? `<img src="${esc(u.avatar)}" alt="">` : ''}<span>${esc(u.name)}</span><span class="badge ${u.role === 'admin' ? '' : 'badge--muted'}">${u.role === 'admin' ? 'Admin' : 'Staff'}</span>`;
+  // people with a Studio account change their password under their name
+  $('user-chip').innerHTML = signedInWith() === 'account' ? `<a href="#/account" title="My account · change password">${chip}</a>` : chip;
   document.querySelectorAll('[data-admin]').forEach((el) => { el.hidden = u.role !== 'admin'; });
   document.querySelector('[data-nav="home"]').textContent = u.role === 'admin' ? 'Workspace' : 'My Workspace';
   if (location.hash === '#/login' || location.hash === '#/forgot') location.hash = '#/';
@@ -133,6 +136,21 @@ function watchSite() {
 }
 
 /* ---------------- start ---------------- */
+// Coming back from GitHub while setting up staff accounts (Team): GitHub adds ?code=… after the
+// app was created and ?installation_id=… after it was installed. Keep that for the Team page
+// and tidy the address.
+(() => {
+  const q = new URLSearchParams(location.search);
+  if (!q.has('code') && !q.has('installation_id')) return;
+  try {
+    const back = JSON.parse(sessionStorage.getItem('js360-setup-return') || '{}');
+    if (q.has('code')) Object.assign(back, { code: q.get('code'), state: q.get('state') || '' });
+    if (q.has('installation_id')) back.installed = true;
+    sessionStorage.setItem('js360-setup-return', JSON.stringify(back));
+  } catch {}
+  history.replaceState(null, '', `${location.pathname}#/team`);
+})();
+
 (async () => {
   if (!hasToken()) return showAuth(location.hash === '#/forgot' ? 'forgot' : 'login');
   try {
