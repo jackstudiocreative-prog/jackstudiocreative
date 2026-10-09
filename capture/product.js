@@ -4,10 +4,11 @@
 // a Product 360° project (signed in) or download as a zip.
 //
 // What the phone's sensors can tell (only shown when the phone reports them):
-//   level        — sideways tilt of the camera (deviceorientation)
+//   level        — sideways tilt of the camera (deviceorientation) → a turning arrow
 //   held still   — how much the phone turned in the last third of a second
-//   moved        — how far the phone has turned since the first photo
-// Nothing here looks at the picture itself: centring the product is up to the person, helped by the frame and the ghost.
+//   moved        — which way the phone points compared with the first photo → an arrow back
+// Nothing here looks at the picture itself: centring the product is up to the person, helped by the frame.
+// The turntable arrow after each photo is an instruction (which way and how far), not a measurement.
 import { rotationFromEuler, mat } from './stitch.js';
 import { SpinViewer } from '../assets/js/spin-viewer.js';
 import { hasToken, whoAmI } from '../studio/js/github.js';
@@ -23,10 +24,11 @@ const MIN_SPIN = 8;           // the Studio needs at least 8 photos for a 360° 
 const MIN_ACTION = 3;
 const MAX_ACTION = 60;
 const LEVEL_DEG = 2;          // "level" tolerance
-const MOVED_DEG = 3;          // the phone has turned this far since the first photo → warn
+const MOVED_DEG = 3;          // the phone has turned this far since the first photo → arrow back…
+const BACK_DEG = 1;           // …until it is within this of where it was
 const SHAKE_DEG = 1.2;        // turned this much within SHAKE_MS → "hold still"
 const SHAKE_MS = 350;
-const C = { dim: 'rgba(0, 0, 0, 0.62)', line: 'rgba(245, 244, 240, 0.9)', faint: 'rgba(245, 244, 240, 0.28)', green: '#27865A', amber: '#D7A45B' };
+const C = { dim: 'rgba(0, 0, 0, 0.62)', line: 'rgba(245, 244, 240, 0.9)', faint: 'rgba(245, 244, 240, 0.28)', green: '#27865A', amber: '#D7A45B', red: '#E0625B' };
 
 const params = new URLSearchParams(location.search);
 const st = {
@@ -35,7 +37,8 @@ const st = {
   count: 36, turnSecs: 60, every: 3,
   stream: null, wakeLock: null, raf: 0, cameraLost: false,
   shots: [],                                                     // [{ blob, url }]
-  ghost: null, showGhost: true, showGrid: false, busy: false,
+  ghost: null, showGhost: false, showGrid: false, busy: false,     // the ghost is optional; it is always shown when retaking
+  realign: false, guide: null, turnHint: false,                  // an arrow is showing the way back / which arrow to draw / turntable arrow due
   retake: null,                                                  // index of the photo being taken again
   retakeBack: false,                                             // …and afterwards go straight back to the review screen
   fromReview: false,                                             // the camera was opened again from the review screen
@@ -59,24 +62,24 @@ const STEPS = {
   spin: {
     manual: () => [
       '<b>Product in the middle of the turntable</b>, on a flat, stable surface.',
-      '<b>Phone on a tripod and level</b>, with the product centred in the frame.',
-      `<b>Turn one step, then tap.</b> ${st.count} photos make one full turn.`,
+      '<b>Phone on a tripod and level</b>, product centred. If the phone moves, an arrow shows the way back.',
+      `<b>Turn the turntable the way the arrow shows, then tap.</b> ${st.count} photos make one full turn.`,
     ],
     auto: () => [
       '<b>Product in the middle of the turntable</b>, on a flat, stable surface.',
-      '<b>Phone on a tripod and level</b>, with the product centred in the frame.',
+      '<b>Phone on a tripod and level</b>, product centred. If the phone moves, an arrow shows the way back.',
       `<b>Start the turntable, then press Start.</b> ${st.count} photos are taken during one turn.`,
     ],
   },
   action: {
     manual: () => [
       '<b>Product closed</b>, on a flat, stable surface.',
-      '<b>Phone on a tripod and level.</b> Don’t move the phone or the product.',
+      '<b>Phone on a tripod and level.</b> If the phone moves, an arrow shows the way back.',
       '<b>Open it a little, hands out of the picture, tap.</b> 8–30 photos is plenty.',
     ],
     auto: () => [
       '<b>Product closed</b>, on a flat, stable surface.',
-      '<b>Phone on a tripod and level.</b> Don’t move the phone or the product.',
+      '<b>Phone on a tripod and level.</b> If the phone moves, an arrow shows the way back.',
       `<b>Press Start, then open it a little between photos.</b> One every ${st.every} seconds.`,
     ],
   },
@@ -135,6 +138,13 @@ function onOrientation(e) {
 const rollDeg = () => (st.R ? Math.asin(clamp(st.R[6], -1, 1)) / DEG : null); // sideways tilt; > 0 when the right side is higher
 const angleBetween = (A, B) => { const M = mat.mul(mat.t(A), B); return Math.acos(clamp((M[0] + M[4] + M[8] - 1) / 2, -1, 1)) / DEG; };
 const movedDeg = () => (st.R && st.R0 ? angleBetween(st.R0, st.R) : 0);
+/** Where the camera points now compared with the first photo, in degrees: yaw > 0 = further right, pitch > 0 = higher. */
+function offsetDeg() {
+  if (!st.R || !st.R0) return null;
+  const M = mat.mul(mat.t(st.R0), st.R);
+  const f = [-M[2], -M[5], -M[8]]; // the camera's direction now, seen from the phone as it was at the first photo
+  return { yaw: Math.atan2(f[0], -f[2]) / DEG, pitch: Math.asin(clamp(f[1], -1, 1)) / DEG };
+}
 function shakeDeg() {
   if (!st.R || st.recent.length < 2 || performance.now() - st.recent[st.recent.length - 1].t > 1000) return 0;
   return angleBetween(st.recent[0].R, st.R);
@@ -199,6 +209,8 @@ function stopCamera() {
 }
 
 function resetShots() {
+  st.turnHint = false;
+  st.realign = false;
   st.shots.forEach((s) => URL.revokeObjectURL(s.url));
   st.shots = [];
   st.ghost = null;
@@ -345,7 +357,7 @@ function draw() {
   ctx.fillRect(x + side, y, W - x - side, side);
 
   // ghost of the last photo (or of the photo being retaken): the product should sit exactly on top of it
-  if (st.showGhost && st.ghost) {
+  if ((st.showGhost || st.retake != null) && st.ghost) {
     ctx.globalAlpha = 0.4;
     ctx.drawImage(st.ghost, x, y, side, side);
     ctx.globalAlpha = 1;
@@ -398,12 +410,99 @@ function draw() {
     ctx.restore();
   }
   ctx.lineCap = 'butt';
+  drawGuide(ctx, x, y, side);
 
   // automatic shooting: the Start/Pause button fills up as the next photo approaches
   if (st.trigger === 'auto' && st.retake == null) {
     const left = st.auto.running ? clamp((st.auto.nextAt - performance.now()) / st.auto.interval, 0, 1) : 1;
     $('shutter').style.setProperty('--p', String(Math.round((1 - left) * 100)));
   }
+}
+
+/* ---------- arrows ---------- */
+
+const pulse = () => 0.65 + 0.35 * Math.sin(performance.now() / 180);
+
+/** A thick arrow pointing `dir` ('left' | 'right' | 'up' | 'down'), centred on (cx, cy). */
+function straightArrow(ctx, cx, cy, size, dir, color) {
+  const a = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }[dir];
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(a);
+  const L = size, H = size * 0.55, T = size * 0.2; // length, head width, shaft width
+  ctx.beginPath();
+  ctx.moveTo(-L / 2, -T / 2); ctx.lineTo(L / 2 - H * 0.8, -T / 2); ctx.lineTo(L / 2 - H * 0.8, -H / 2);
+  ctx.lineTo(L / 2, 0);
+  ctx.lineTo(L / 2 - H * 0.8, H / 2); ctx.lineTo(L / 2 - H * 0.8, T / 2); ctx.lineTo(-L / 2, T / 2);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.strokeStyle = 'rgba(23, 26, 29, 0.55)';
+  ctx.lineWidth = 2;
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Part of an ellipse (radii rx, ry) with an arrow head at `to`. Angles in radians; `cw` = clockwise on screen. */
+function curvedArrow(ctx, cx, cy, rx, ry, from, to, cw, color, width) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = 'rgba(23, 26, 29, 0.55)';
+  ctx.shadowBlur = 4;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx, ry, 0, from, to, !cw);
+  ctx.stroke();
+  // the head at `to`, pointing the way of travel
+  const px = cx + Math.cos(to) * rx, py = cy + Math.sin(to) * ry;
+  let tx = -Math.sin(to) * rx, ty = Math.cos(to) * ry;
+  if (!cw) { tx = -tx; ty = -ty; }
+  const len = Math.hypot(tx, ty) || 1; tx /= len; ty /= len;
+  const h = width * 2.4;
+  ctx.beginPath();
+  ctx.moveTo(px + tx * h, py + ty * h);
+  ctx.lineTo(px - tx * h * 0.35 - ty * h * 0.75, py - ty * h * 0.35 + tx * h * 0.75);
+  ctx.lineTo(px - tx * h * 0.35 + ty * h * 0.75, py - ty * h * 0.35 - tx * h * 0.75);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function label(ctx, text, cx, cy, size) {
+  ctx.font = `600 ${size}px Inter, system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(23, 26, 29, 0.7)';
+  ctx.strokeText(text, cx, cy);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(text, cx, cy);
+}
+
+/** The arrow chosen by statusNow(): back to where the phone was, level it, or turn the turntable. */
+function drawGuide(ctx, x, y, side) {
+  const g = st.guide;
+  if (!g) return;
+  ctx.globalAlpha = g === 'turntable' ? 0.95 : pulse();
+  if (g === 'left' || g === 'right' || g === 'up' || g === 'down') {
+    // near the edge the phone should turn towards
+    const m = side * 0.17;
+    const pos = { left: [x + m, y + side / 2], right: [x + side - m, y + side / 2], up: [x + side / 2, y + m + side * 0.06], down: [x + side / 2, y + side - m] }[g];
+    straightArrow(ctx, pos[0], pos[1], side * 0.2, g, C.red);
+  } else if (g === 'cw' || g === 'ccw') {
+    // around the level bar: turn the phone this way until the bar goes green
+    const ly = y + Math.max(28, side * 0.08), r = Math.min(70, side * 0.2) + 26;
+    const cw = g === 'cw';
+    curvedArrow(ctx, x + side / 2, ly + r * 0.7, r, r * 0.6, cw ? Math.PI * 1.2 : Math.PI * 1.8, cw ? Math.PI * 1.72 : Math.PI * 1.28, cw, C.amber, 6);
+  } else if (g === 'turntable') {
+    // under the product: an arc along the front of the turntable, same way every time
+    const cy = y + side * 0.74, rx = side * 0.3, ry = side * 0.08;
+    curvedArrow(ctx, x + side / 2, cy, rx, ry, Math.PI * 0.85, Math.PI * 0.15, false, C.amber, 7);
+    label(ctx, `Turn ${stepDeg()}°`, x + side / 2, cy + ry + 22, Math.max(15, side * 0.05));
+  }
+  ctx.globalAlpha = 1;
 }
 
 /** What to do next, in a few words. */
@@ -416,18 +515,34 @@ function instruction() {
   }
   if (auto) return n ? 'Paused — press Start to carry on' : spin() ? 'Start the turntable, then press Start' : 'Product closed? Press Start';
   if (!n) return spin() ? 'Keep the product centred, then tap' : 'Product closed? Tap for the first photo';
-  return spin() ? `Turn the turntable one step (${stepDeg()}°), then tap` : 'Open it a little more, hands out, then tap';
+  return spin() ? `Turn the turntable ${stepDeg()}° the way the arrow shows, then tap` : 'Open it a little more, hands out, then tap';
 }
 
 function statusNow() {
+  const s = statusParts();
+  // the turntable arrow, when nothing more urgent needs an arrow
+  st.guide = s.arrow || (st.turnHint && st.retake == null && (s.tone === 'ready' || s.tone === 'neutral') ? 'turntable' : null);
+  return s;
+}
+
+function statusParts() {
   const n = st.shots.length, sub = instruction();
   if (st.cameraLost) return { tone: 'error', title: 'The camera stopped', sub: 'Press × and start again — your photos are kept until you close' };
   if (st.busy) return { tone: 'busy', title: 'Capturing…', sub: 'Hold still' };
   const roll = rollDeg();
-  if (roll == null) return { tone: 'neutral', title: 'Keep the phone still and level', sub }; // no motion sensor (or not allowed)
+  if (roll == null) return { tone: 'neutral', title: 'Keep the phone still and level', sub }; // no motion sensor (or not allowed): no arrows either
   if (shakeDeg() > SHAKE_DEG) return { tone: 'error', title: 'Too much movement · Hold still', sub: st.auto.running ? 'Photos are still being taken' : 'Wait until the phone is steady' };
-  if (n && st.retake == null && movedDeg() > MOVED_DEG) return { tone: 'error', title: 'The phone has moved', sub: 'Line the product up with the ghost' };
-  if (Math.abs(roll) > LEVEL_DEG) return { tone: 'adjust', title: `Tilt phone slightly ${roll > 0 ? 'right' : 'left'}`, sub: 'Keep it level' };
+  // moved since the first photo: point the way back, and keep pointing until it is nearly where it was
+  const off = n && st.retake == null ? offsetDeg() : null;
+  const moved = off ? Math.hypot(off.yaw, off.pitch) : 0;
+  st.realign = off ? (st.realign ? moved > BACK_DEG : moved > MOVED_DEG) : false;
+  if (st.realign) {
+    const sideways = Math.abs(off.yaw) >= Math.abs(off.pitch);
+    const arrow = sideways ? (off.yaw > 0 ? 'left' : 'right') : (off.pitch > 0 ? 'down' : 'up');
+    const words = { left: 'Turn the phone back left', right: 'Turn the phone back right', up: 'Tilt the phone back up', down: 'Tilt the phone back down' };
+    return { tone: 'error', title: `The phone has moved · ${words[arrow]}`, sub: 'Follow the arrow until this turns green', arrow };
+  }
+  if (Math.abs(roll) > LEVEL_DEG) return { tone: 'adjust', title: `Tilt phone slightly ${roll > 0 ? 'right' : 'left'}`, sub: 'Follow the curved arrow until the line is green', arrow: roll > 0 ? 'cw' : 'ccw' };
   return { tone: 'ready', title: st.auto.running ? 'Phone level · Shooting' : 'Phone level · Ready to capture', sub };
 }
 
@@ -496,6 +611,7 @@ async function shoot() {
     } else {
       st.shots.push(shot);
       st.ghost = cv;
+      st.turnHint = spin() && st.trigger === 'manual';
       if (!st.R0 && st.R) st.R0 = st.R;
       confirmShot(spin() ? `Photo ${st.shots.length} of ${st.count} captured` : `Photo ${st.shots.length} captured`);
     }
@@ -578,6 +694,7 @@ $('shutter').addEventListener('click', () => {
 $('undo').addEventListener('click', async () => {
   if (st.auto.running) setAuto(false);
   const gone = st.shots.pop();
+  st.turnHint = spin() && st.trigger === 'manual' && st.shots.length > 0;
   if (gone) URL.revokeObjectURL(gone.url);
   const last = st.shots[st.shots.length - 1];
   st.ghost = last ? await createImageBitmap(last.blob).catch(() => null) : null;
