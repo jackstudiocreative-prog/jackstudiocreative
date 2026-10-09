@@ -1,0 +1,17 @@
+{
+  "id": "bag",
+  "type": "product",
+  "title": "BAG",
+  "createdBy": "jackstudiocreative-prog",
+  "createdAt": "2026-10-09T01:26:10.230Z",
+  "updatedBy": "jackstudiocreative-prog",
+  "updatedAt": "2026-10-09T01:26:10.230Z",
+  "publishedBy": null,
+  "publishedAt": null,
+  "draft": {
+    "productId": null,
+    "spin": null,
+    "model": null
+  },
+  "published": null
+}
