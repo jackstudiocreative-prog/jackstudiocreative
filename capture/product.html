@@ -4,99 +4,212 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
-  <meta name="theme-color" content="#2b211c">
-  <title>Product Capture — Jack Studio</title>
+  <meta name="theme-color" content="#171A1D">
+  <title>360° Product Capture — Jack Studio</title>
+  <link rel="preload" href="../assets/fonts/inter-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/style.css">
-  <link rel="stylesheet" href="capture.css">
+  <link rel="stylesheet" href="product.css">
 </head>
-<body class="cap">
+<body class="pc">
 
-  <!-- 1. Set-up -->
-  <section class="cap-screen cap-intro" id="intro">
-    <div class="cap-intro-inner">
-      <p class="cap-eyebrow">JACK STUDIO 360°</p>
-      <h1>Shoot a product</h1>
-      <p class="cap-lead">Phone on a tripod, product on the turntable. The guides on screen keep every photo lined up.</p>
+  <!-- 1. Before shooting: three steps and the shooting options -->
+  <section class="pc-screen pc-intro" id="intro" aria-labelledby="intro-title">
+    <header class="pc-appbar pc-appbar--light">
+      <a class="pc-iconbtn" id="leave" href="../studio/" aria-label="Close and go back to the Studio">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </a>
+      <span class="pc-appbar-title" id="intro-appbar">360° Capture</span>
+      <span class="pc-iconbtn-spacer"></span>
+    </header>
 
-      <fieldset class="pc-set">
-        <legend>What are you shooting?</legend>
-        <div class="pc-seg">
-          <label><input type="radio" name="shoot" value="spin" checked><span><b>360° turn</b><small>One full turn on the turntable</small></span></label>
-          <label><input type="radio" name="shoot" value="action"><span><b>Open / close</b><small>A zip, flap or lid opening, step by step</small></span></label>
+    <div class="pc-intro-body">
+      <h1 class="pc-title" id="intro-title">Capture your product<br>in 3 simple steps</h1>
+
+      <ol class="pc-steps" id="steps">
+        <li>
+          <span class="pc-step-no">1</span>
+          <p id="step-1"></p>
+          <svg class="pc-step-art" viewBox="0 0 64 48" aria-hidden="true"><ellipse cx="32" cy="36" rx="26" ry="8"/><path d="M6 36v3c0 4.4 11.6 8 26 8s26-3.6 26-8v-3"/><path d="M22 34V18h20v16"/><path d="M27 18c0-5 2-8 5-8s5 3 5 8"/></svg>
+        </li>
+        <li>
+          <span class="pc-step-no">2</span>
+          <p id="step-2"></p>
+          <svg class="pc-step-art" viewBox="0 0 64 48" aria-hidden="true"><rect x="14" y="8" width="36" height="26" rx="4"/><path d="M22 21h20"/><circle cx="32" cy="21" r="3"/><path d="M24 44l8-10 8 10"/></svg>
+        </li>
+        <li>
+          <span class="pc-step-no">3</span>
+          <p id="step-3"></p>
+          <svg class="pc-step-art" viewBox="0 0 64 48" aria-hidden="true"><circle cx="32" cy="24" r="18"/><circle cx="32" cy="24" r="12"/></svg>
+        </li>
+      </ol>
+
+      <details class="pc-options" id="options">
+        <summary>
+          <span>Shooting options</span>
+          <span class="pc-options-now" id="options-now"></span>
+        </summary>
+        <fieldset class="pc-set">
+          <legend>What are you shooting?</legend>
+          <div class="pc-seg">
+            <label><input type="radio" name="shoot" value="spin" checked><span><b>360° turn</b><small>One full turn on the turntable</small></span></label>
+            <label><input type="radio" name="shoot" value="action"><span><b>Open / close</b><small>A zip, flap or lid opening, step by step</small></span></label>
+          </div>
+        </fieldset>
+        <fieldset class="pc-set">
+          <legend>How are the photos taken?</legend>
+          <div class="pc-seg">
+            <label><input type="radio" name="trigger" value="manual" checked><span><b>Tap for each photo</b><small id="manual-sub">Turntable turned by hand</small></span></label>
+            <label><input type="radio" name="trigger" value="auto"><span><b>Automatic</b><small id="auto-sub">Electric turntable</small></span></label>
+          </div>
+        </fieldset>
+        <div class="pc-row">
+          <label class="pc-field" id="f-count"><span>Photos in one turn</span>
+            <select id="count-sel">
+              <option value="24">24 (lighter)</option><option value="36" selected>36 (recommended)</option>
+              <option value="48">48</option><option value="72">72 (smoothest)</option>
+            </select></label>
+          <label class="pc-field" id="f-turn" hidden><span>Seconds for one full turn</span>
+            <input id="turn-secs" type="number" min="10" max="900" step="1" value="60" inputmode="decimal"></label>
+          <label class="pc-field" id="f-every" hidden><span>A photo every</span>
+            <select id="every-sel">
+              <option value="2">2 seconds</option><option value="3" selected>3 seconds</option>
+              <option value="5">5 seconds</option><option value="8">8 seconds</option>
+            </select></label>
         </div>
-      </fieldset>
+      </details>
+      <p class="pc-plan" id="plan"></p>
 
-      <fieldset class="pc-set">
-        <legend>How are the photos taken?</legend>
-        <div class="pc-seg">
-          <label><input type="radio" name="trigger" value="manual" checked><span><b>Tap for each photo</b><small id="manual-sub">Turntable turned by hand</small></span></label>
-          <label><input type="radio" name="trigger" value="auto"><span><b>Automatic</b><small id="auto-sub">Electric turntable</small></span></label>
-        </div>
-      </fieldset>
-
-      <div class="pc-row">
-        <label class="pc-field" id="f-count"><span>Photos in one turn</span>
-          <select id="count-sel">
-            <option value="24">24 (lighter)</option><option value="36" selected>36 (recommended)</option>
-            <option value="48">48</option><option value="72">72 (smoothest)</option>
-          </select></label>
-        <label class="pc-field" id="f-turn" hidden><span>Seconds for one full turn</span>
-          <input id="turn-secs" type="number" min="10" max="900" step="1" value="60" inputmode="decimal"></label>
-        <label class="pc-field" id="f-every" hidden><span>A photo every</span>
-          <select id="every-sel">
-            <option value="2">2 seconds</option><option value="3" selected>3 seconds</option>
-            <option value="5">5 seconds</option><option value="8">8 seconds</option>
-          </select></label>
-      </div>
-      <p class="cap-note pc-plan" id="plan"></p>
-
-      <ol class="cap-tips" id="tips"></ol>
-      <p class="cap-error" id="intro-error" role="alert" hidden></p>
-      <button class="cap-btn" type="button" id="start">Open camera</button>
-      <p class="cap-note"><a class="pc-link" href="./">Capturing a showroom panorama instead?</a></p>
+      <div class="pc-alert" id="intro-error" role="alert" hidden></div>
     </div>
+
+    <footer class="pc-intro-foot">
+      <button class="pc-btn pc-btn--primary" type="button" id="start">Start Capture <span aria-hidden="true">→</span></button>
+      <a class="pc-textlink" href="./">Capturing a showroom panorama instead?</a>
+    </footer>
   </section>
 
   <!-- 2. Shooting -->
-  <section class="cap-screen cap-live pc-live" id="live" hidden>
+  <section class="pc-screen pc-live" id="live" aria-label="Camera" hidden>
     <video id="video" playsinline muted autoplay></video>
     <canvas id="overlay" aria-hidden="true"></canvas>
-    <div class="cap-flash" id="flash"></div>
+    <div class="pc-flash" id="flash"></div>
 
-    <div class="cap-top">
-      <button class="cap-icon" type="button" id="cancel" aria-label="Cancel">×</button>
-      <div class="cap-count"><span id="count">0</span><span id="of"> / <span id="total">36</span></span></div>
-      <button class="cap-icon cap-icon--text" type="button" id="undo" disabled>Undo</button>
+    <header class="pc-top" id="top">
+      <div class="pc-top-row">
+        <button class="pc-iconbtn pc-iconbtn--dark" type="button" id="cancel" aria-label="Close the camera">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+        <span class="pc-appbar-title" id="live-title">360° Capture</span>
+        <div class="pc-top-actions">
+          <button class="pc-chipbtn" type="button" id="grid" aria-pressed="false" aria-label="Grid">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v16M15 4v16M4 9h16M4 15h16"/></svg>
+          </button>
+          <button class="pc-chipbtn pc-chipbtn--text" type="button" id="undo" disabled>Undo</button>
+        </div>
+      </div>
+      <div class="pc-progress-block" id="progress-block">
+        <div class="pc-progress-line">
+          <b id="count-text" aria-live="polite">0 / 36 Photos</b>
+          <span id="percent">0%</span>
+        </div>
+        <div class="pc-bar" id="bar" role="progressbar" aria-label="Photos taken" aria-valuemin="0" aria-valuemax="36" aria-valuenow="0"><i id="bar-fill"></i></div>
+        <span class="pc-remaining" id="remaining">36 photos remaining</span>
+      </div>
+    </header>
+
+    <p class="pc-captured" id="captured" role="status" aria-live="polite" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span id="captured-text"></span>
+    </p>
+
+    <div class="pc-status" id="status" data-tone="neutral" aria-live="polite">
+      <span class="pc-status-icon" aria-hidden="true"></span>
+      <span class="pc-status-text"><b id="status-title"></b><small id="status-sub"></small></span>
     </div>
-    <p class="cap-hint pc-hint" id="hint" aria-live="polite"></p>
 
-    <div class="cap-bottom pc-bottom">
-      <button class="cap-icon cap-icon--text pc-ghost" type="button" id="ghost" aria-pressed="true">Ghost</button>
-      <button class="cap-shutter" type="button" id="shutter" aria-label="Take photo"></button>
-      <button class="cap-btn cap-btn--ghost" type="button" id="finish" disabled>Finish</button>
+    <nav class="pc-controls" id="controls" aria-label="Camera controls">
+      <button class="pc-ctl" type="button" id="ghost" aria-pressed="true">
+        <span class="pc-ctl-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/></svg></span>
+        <span class="pc-ctl-label">Ghost</span>
+      </button>
+      <button class="pc-shutter" type="button" id="shutter" aria-label="Take photo"><span id="shutter-text"></span></button>
+      <button class="pc-ctl" type="button" id="review-btn" disabled>
+        <span class="pc-ctl-thumb" id="review-thumb"></span>
+        <span class="pc-ctl-label" id="review-label">Review</span>
+      </button>
+    </nav>
+
+    <!-- photos taken so far, without leaving the camera -->
+    <div class="pc-sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+      <div class="pc-sheet-panel">
+        <div class="pc-sheet-head">
+          <h2 id="sheet-title">Photos so far</h2>
+          <button class="pc-iconbtn pc-iconbtn--dark" type="button" id="sheet-close" aria-label="Back to the camera">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <p class="pc-sheet-sub" id="sheet-sub"></p>
+        <ul class="pc-thumbs" id="sheet-thumbs"></ul>
+        <div class="pc-sheet-actions">
+          <button class="pc-btn pc-btn--ghost" type="button" id="sheet-back">Back to camera</button>
+          <button class="pc-btn pc-btn--primary" type="button" id="finish">Finish</button>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- 3. Review and save -->
-  <section class="cap-screen pc-review" id="review" hidden>
-    <div class="pc-stage-wrap"><div class="pc-stage" id="stage"></div></div>
-    <div class="cap-result-bar pc-bar">
-      <p class="cap-note" id="review-info"></p>
-      <div id="save-box" hidden>
+  <section class="pc-screen pc-review" id="review" aria-labelledby="review-title" hidden>
+    <header class="pc-appbar">
+      <button class="pc-iconbtn pc-iconbtn--dark" type="button" id="again-x" aria-label="Discard and start again">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <h1 class="pc-appbar-title" id="review-title">Review Your Shots</h1>
+      <span class="pc-iconbtn-spacer"></span>
+    </header>
+
+    <div class="pc-review-body">
+      <p class="pc-done" id="done-line"></p>
+      <div class="pc-stage-wrap"><div class="pc-stage" id="stage"></div></div>
+      <p class="pc-review-info" id="review-info"></p>
+      <ul class="pc-thumbs pc-thumbs--review" id="review-thumbs" aria-label="All photos — tap one to retake it"></ul>
+
+      <div class="pc-save" id="save-box" hidden>
         <label class="pc-field"><span>Save to product project</span><select id="project"></select></label>
         <label class="pc-field" id="f-new" hidden><span>New project name</span>
           <input id="new-name" maxlength="80" placeholder="e.g. Urban Tote Brown"></label>
       </div>
-      <div class="cap-progress" id="save-progress" hidden><i></i></div>
-      <p class="cap-error" id="save-error" role="alert" hidden></p>
-      <div class="cap-actions">
-        <button class="cap-btn" type="button" id="save" hidden>Save to project</button>
-        <button class="cap-btn cap-btn--ghost" type="button" id="download">Download photos</button>
-        <button class="cap-btn cap-btn--ghost" type="button" id="again">Shoot again</button>
-      </div>
-      <p class="cap-note" id="review-note"></p>
+      <div class="pc-bar pc-bar--save" id="save-progress" hidden><i></i></div>
+      <div class="pc-alert" id="save-error" role="alert" hidden></div>
+      <p class="pc-review-note" id="review-note"></p>
     </div>
+
+    <footer class="pc-review-foot">
+      <button class="pc-btn pc-btn--outline" type="button" id="missing" hidden></button>
+      <button class="pc-btn pc-btn--primary" type="button" id="save" hidden>Complete &amp; Save</button>
+      <div class="pc-foot-row">
+        <button class="pc-btn pc-btn--ghost" type="button" id="download">Download photos</button>
+        <button class="pc-btn pc-btn--ghost" type="button" id="again">Shoot again</button>
+      </div>
+    </footer>
   </section>
+
+  <!-- one photo, large: retake it -->
+  <div class="pc-sheet pc-photo" id="photo" role="dialog" aria-modal="true" aria-labelledby="photo-title" hidden>
+    <div class="pc-sheet-panel">
+      <div class="pc-sheet-head">
+        <h2 id="photo-title">Photo</h2>
+        <button class="pc-iconbtn pc-iconbtn--dark" type="button" id="photo-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <img id="photo-img" alt="">
+      <p class="pc-sheet-sub" id="photo-sub"></p>
+      <div class="pc-sheet-actions">
+        <button class="pc-btn pc-btn--ghost" type="button" id="photo-cancel">Keep it</button>
+        <button class="pc-btn pc-btn--primary" type="button" id="photo-retake">Retake this photo</button>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="product.js"></script>
 </body>
