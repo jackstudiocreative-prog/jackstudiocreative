@@ -1,6 +1,19 @@
 {
-  "updatedAt": "2026-10-09T01:26:14.964Z",
+  "updatedAt": "2026-10-20T08:37:03.382Z",
   "projects": [
+    {
+      "id": "luggage",
+      "type": "product",
+      "title": "luggage",
+      "status": "draft",
+      "createdBy": "jackstudiocreative-prog",
+      "updatedBy": "jackstudiocreative-prog",
+      "updatedAt": "2026-10-20T08:36:59.776Z",
+      "publishedAt": null,
+      "cover": "",
+      "productId": null,
+      "published": null
+    },
     {
       "id": "bag",
       "type": "product",
