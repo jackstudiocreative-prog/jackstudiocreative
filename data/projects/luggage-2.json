@@ -1,0 +1,17 @@
+{
+  "id": "luggage-2",
+  "type": "product",
+  "title": "luggage",
+  "createdBy": "jackstudiocreative-prog",
+  "createdAt": "2026-10-22T01:51:20.980Z",
+  "updatedBy": "jackstudiocreative-prog",
+  "updatedAt": "2026-10-22T01:51:20.980Z",
+  "publishedBy": null,
+  "publishedAt": null,
+  "draft": {
+    "productId": null,
+    "spin": null,
+    "model": null
+  },
+  "published": null
+}
