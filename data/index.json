@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-20T08:37:03.382Z",
+  "updatedAt": "2026-10-22T01:49:51.100Z",
   "projects": [
     {
       "id": "luggage",
@@ -8,9 +8,9 @@
       "status": "draft",
       "createdBy": "jackstudiocreative-prog",
       "updatedBy": "jackstudiocreative-prog",
-      "updatedAt": "2026-10-20T08:36:59.776Z",
+      "updatedAt": "2026-10-22T01:49:25.155Z",
       "publishedAt": null,
-      "cover": "",
+      "cover": "media/products/luggage/spin-mvivuxpe/frame-01.jpg",
       "productId": null,
       "published": null
     },

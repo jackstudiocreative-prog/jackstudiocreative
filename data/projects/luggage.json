@@ -5,12 +5,17 @@
   "createdBy": "jackstudiocreative-prog",
   "createdAt": "2026-10-20T08:36:59.770Z",
   "updatedBy": "jackstudiocreative-prog",
-  "updatedAt": "2026-10-20T08:36:59.776Z",
+  "updatedAt": "2026-10-22T01:49:25.155Z",
   "publishedBy": null,
   "publishedAt": null,
   "draft": {
     "productId": null,
-    "spin": null,
+    "spin": {
+      "folder": "media/products/luggage/spin-mvivuxpe",
+      "pattern": "frame-{n}.jpg",
+      "count": 20,
+      "pad": 2
+    },
     "model": null
   },
   "published": null
