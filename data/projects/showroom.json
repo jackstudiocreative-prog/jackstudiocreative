@@ -1,0 +1,16 @@
+{
+  "id": "showroom",
+  "type": "showroom",
+  "title": "Showroom",
+  "createdBy": "jackstudiocreative-prog",
+  "createdAt": "2026-10-27T09:05:05.812Z",
+  "updatedBy": "jackstudiocreative-prog",
+  "updatedAt": "2026-10-27T09:05:05.815Z",
+  "publishedBy": null,
+  "publishedAt": null,
+  "draft": {
+    "startScene": "",
+    "scenes": []
+  },
+  "published": null
+}
